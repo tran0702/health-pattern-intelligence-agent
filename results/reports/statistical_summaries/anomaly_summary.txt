@@ -1,0 +1,56 @@
+================================================================================
+COPE + GNN ANOMALY DETECTION SUMMARY REPORT
+================================================================================
+
+Generated: 2026-02-05 22:55:56.325338
+
+================================================================================
+
+1. DATA OVERVIEW
+--------------------------------------------------------------------------------
+Total HR records analyzed: 360,178
+Date range: 2017-11-27 09:47:34 to 2022-09-23 10:59:44
+Total workouts: 278
+
+2. ANOMALY DETECTION RESULTS
+--------------------------------------------------------------------------------
+Total anomalies detected: 3,234 (0.90%)
+Total normal events: 356,944 (99.10%)
+Average anomaly score: 11.1599
+
+3. ANOMALY DISTRIBUTION BY CONTEXT
+--------------------------------------------------------------------------------
+
+By Activity Context:
+  Cycling        :    70 /    500 (14.00%)
+  Hiking         :     0 /     17 ( 0.00%)
+  Rowing         :     0 /  1,710 ( 0.00%)
+  Running        :     0 /      1 ( 0.00%)
+  Walking        :     1 /  5,792 ( 0.02%)
+  resting        : 3,163 / 352,158 ( 0.90%)
+
+By HR Zone:
+  very_low       : 2,953 / 221,574 ( 1.33%)
+  low            :    80 / 116,686 ( 0.07%)
+  moderate       :    34 / 20,222 ( 0.17%)
+  high           :    80 /  1,533 ( 5.22%)
+  very_high      :    87 /    163 (53.37%)
+
+By Time Period:
+  afternoon      :   340 / 135,094 ( 0.25%)
+  evening        :   160 / 88,802 ( 0.18%)
+  morning        :   751 / 92,043 ( 0.82%)
+  night          : 1,983 / 44,239 ( 4.48%)
+
+4. OUTPUT FILES
+--------------------------------------------------------------------------------
+COPE Graph:           cope_graph.gpickle
+GNN Model:            gnn_anomaly_model.pth
+All Predictions:      anomaly_predictions.csv
+Top 100 Anomalies:    top_anomalies.csv
+Timeline Plot:        anomaly_timeline.png
+Distribution Plot:    context_distribution.png
+
+================================================================================
+END OF REPORT
+================================================================================

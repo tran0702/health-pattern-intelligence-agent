@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data (IMPORTANT: Keep original data private)
+data/
+original_data/
+raw_data/
+*.xml
+*.gpx
+electrocardiograms/
+
+# API Keys and Secrets
+.env
+.env.local
+*.key
+secrets.json
+config/credentials.json
+
+# Large Files
+*.zip
+*.tar.gz
+*.csv.gz
+
+# Model Checkpoints (optional - uncomment if models are too large)
+# *.pth
+# *.pt
+# *.h5
+# *.pkl
+# *.pickle
+
+# Temporary Files
+*.tmp
+*.temp
+*.log
+
+# OS Files
+Thumbs.db
+.DS_Store
+
+# Claude Code
+.claude/
+CLEANUP_PLAN.md
+"results/models/cope_graph.gpickle" 

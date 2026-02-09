@@ -1,0 +1,245 @@
+================================================================================
+APPLE HEALTH DATA - GEMINI-ENHANCED ANOMALY ANALYSIS
+================================================================================
+Analysis Date: 2026-02-02 18:42:28
+AI Model: Google Gemini Pro
+Anomalies Analyzed: 20
+
+🎯 EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Analyzed 20 most severe anomalies:
+  - CRITICAL: 17
+  - HIGH: 3
+
+Key patterns identified:
+  ⚠️  High frequency of nighttime anomalies (8)
+  🏃 3 anomalies during workouts
+
+📊 DETAILED ANOMALY ANALYSIS
+--------------------------------------------------------------------------------
+
+================================================================================
+[1] CRITICAL ANOMALY
+================================================================================
+Time: 2022-03-06 08:29:21
+Heart Rate: 168.0 bpm (Expected: 87.587850181863)
+Deviation: 6.77 standard deviations
+Context: Morning, None
+
+🤖 GEMINI AI ANALYSIS:
+------------------------------------------------------------
+Here's an analysis of the heart rate anomaly:
+
+**1. POSSIBLE CAUSES**
+*   **Supraventricular Tachycardia (SVT) or other acute arrhythmia:** A sudden
+
+
+================================================================================
+[2] CRITICAL ANOMALY
+================================================================================
+Time: 2021-11-28 08:31:40
+Heart Rate: 162.0 bpm (Expected: 87.587850181863)
+Deviation: 6.27 standard deviations
+Context: Morning, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[3] CRITICAL ANOMALY
+================================================================================
+Time: 2022-05-22 09:07:40
+Heart Rate: 160.0 bpm (Expected: 87.587850181863)
+Deviation: 6.10 standard deviations
+Context: Morning, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[4] CRITICAL ANOMALY
+================================================================================
+Time: 2022-04-24 09:05:52
+Heart Rate: 153.0 bpm (Expected: 87.587850181863)
+Deviation: 5.51 standard deviations
+Context: Morning, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[5] CRITICAL ANOMALY
+================================================================================
+Time: 2022-06-18 15:51:46
+Heart Rate: 99.0 bpm (Expected: 74.05002842524162)
+Deviation: 4.50 standard deviations
+Context: Afternoon, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[6] CRITICAL ANOMALY
+================================================================================
+Time: 2019-11-23 00:28:23
+Heart Rate: 131.0 bpm (Expected: 87.587850181863)
+Deviation: 3.66 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[7] CRITICAL ANOMALY
+================================================================================
+Time: 2019-11-23 00:27:55
+Heart Rate: 131.0 bpm (Expected: 87.587850181863)
+Deviation: 3.66 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[8] CRITICAL ANOMALY
+================================================================================
+Time: 2019-03-29 23:00:59
+Heart Rate: 54.0 bpm (Expected: 74.05002842524162)
+Deviation: 3.62 standard deviations
+Context: Evening, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[9] CRITICAL ANOMALY
+================================================================================
+Time: 2022-06-25 23:28:27
+Heart Rate: 130.0 bpm (Expected: 87.587850181863)
+Deviation: 3.57 standard deviations
+Context: Evening, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[10] CRITICAL ANOMALY
+================================================================================
+Time: 2022-07-16 00:49:16
+Heart Rate: 129.0 bpm (Expected: 87.587850181863)
+Deviation: 3.49 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[11] CRITICAL ANOMALY
+================================================================================
+Time: 2018-03-11 01:15:38
+Heart Rate: 128.0 bpm (Expected: 87.587850181863)
+Deviation: 3.40 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[12] CRITICAL ANOMALY
+================================================================================
+Time: 2019-11-23 00:28:49
+Heart Rate: 127.0 bpm (Expected: 87.587850181863)
+Deviation: 3.32 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[13] CRITICAL ANOMALY
+================================================================================
+Time: 2021-05-12 09:43:10
+Heart Rate: 127.0 bpm (Expected: 99.93257074051776)
+Deviation: 3.23 standard deviations
+Context: Morning, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[14] CRITICAL ANOMALY
+================================================================================
+Time: 2021-02-02 06:43:44
+Heart Rate: 127.0 bpm (Expected: 99.93257074051776)
+Deviation: 3.23 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[15] CRITICAL ANOMALY
+================================================================================
+Time: 2019-03-12 09:33:54
+Heart Rate: 57.0 bpm (Expected: 74.05002842524162)
+Deviation: 3.08 standard deviations
+Context: Morning, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[16] CRITICAL ANOMALY
+================================================================================
+Time: 2018-09-03 00:07:48
+Heart Rate: 57.0 bpm (Expected: 74.05002842524162)
+Deviation: 3.08 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[17] CRITICAL ANOMALY
+================================================================================
+Time: 2022-07-16 00:43:37
+Heart Rate: 124.0 bpm (Expected: 87.587850181863)
+Deviation: 3.07 standard deviations
+Context: Night, None
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[18] HIGH ANOMALY
+================================================================================
+Time: 2019-01-30 20:32:49
+Heart Rate: 163.0 bpm (Expected: 87.587850181863)
+Deviation: 6.35 standard deviations
+Context: Evening, Rowing
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[19] HIGH ANOMALY
+================================================================================
+Time: 2019-03-25 17:49:32
+Heart Rate: 157.865 bpm (Expected: 87.587850181863)
+Deviation: 5.92 standard deviations
+Context: Afternoon, Rowing
+
+🤖 AI ANALYSIS: Not available
+
+
+================================================================================
+[20] HIGH ANOMALY
+================================================================================
+Time: 2022-06-22 21:40:35
+Heart Rate: 157.0 bpm (Expected: 87.587850181863)
+Deviation: 5.84 standard deviations
+Context: Evening, Running
+
+🤖 AI ANALYSIS: Not available
+
+================================================================================

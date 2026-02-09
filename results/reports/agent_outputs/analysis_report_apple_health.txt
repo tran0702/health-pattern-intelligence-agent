@@ -1,0 +1,248 @@
+================================================================================
+APPLE HEALTH DATA - ANOMALY DETECTION REPORT
+================================================================================
+Analysis Date: 2026-01-29 21:10:29
+Total Records Analyzed: 360,282
+Anomalies Detected: 2,499
+Anomaly Rate: 0.69%
+
+SEVERITY BREAKDOWN:
+  CRITICAL: 17 (0.7%)
+  HIGH: 188 (7.5%)
+  MEDIUM: 435 (17.4%)
+  LOW: 1,859 (74.4%)
+
+BASELINE PATTERNS:
+  period_Afternoon:
+    Mean HR: 89.4 ± 11.4 bpm
+    Median: 88.0 bpm
+    Sample size: 135,282
+  period_Evening:
+    Mean HR: 88.0 ± 11.0 bpm
+    Median: 86.0 bpm
+    Sample size: 88,859
+  period_Morning:
+    Mean HR: 86.5 ± 11.9 bpm
+    Median: 84.0 bpm
+    Sample size: 110,671
+  period_Night:
+    Mean HR: 80.9 ± 14.3 bpm
+    Median: 81.0 bpm
+    Sample size: 25,470
+  type_HeartRate:
+    Mean HR: 87.6 ± 11.9 bpm
+    Median: 86.0 bpm
+    Sample size: 356,862
+  type_RestingHeartRate:
+    Mean HR: 74.1 ± 5.5 bpm
+    Median: 75.0 bpm
+    Sample size: 1,759
+  type_WalkingHeartRateAverage:
+    Mean HR: 99.9 ± 8.4 bpm
+    Median: 100.0 bpm
+    Sample size: 1,661
+  workout_Cycling:
+    Mean HR: 91.1 ± 11.6 bpm
+    Median: 90.0 bpm
+    Sample size: 949
+  workout_None:
+    Mean HR: 86.9 ± 11.4 bpm
+    Median: 85.0 bpm
+    Sample size: 338,078
+  workout_Rowing:
+    Mean HR: 103.8 ± 16.8 bpm
+    Median: 106.0 bpm
+    Sample size: 6,708
+  workout_Running:
+    Mean HR: 88.5 ± 17.6 bpm
+    Median: 81.0 bpm
+    Sample size: 325
+  workout_Walking:
+    Mean HR: 96.1 ± 12.2 bpm
+    Median: 96.0 bpm
+    Sample size: 14,162
+
+TOP 20 MOST SEVERE ANOMALIES:
+--------------------------------------------------------------------------------
+
+[1] CRITICAL ANOMALY
+    Time: 2022-03-06 08:29:21
+    Heart Rate: 168 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 6.77 std
+    Time period: Morning
+    Workout: None
+
+[2] CRITICAL ANOMALY
+    Time: 2021-11-28 08:31:40
+    Heart Rate: 162 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 6.27 std
+    Time period: Morning
+    Workout: None
+
+[3] CRITICAL ANOMALY
+    Time: 2022-05-22 09:07:40
+    Heart Rate: 160 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 6.10 std
+    Time period: Morning
+    Workout: None
+
+[4] CRITICAL ANOMALY
+    Time: 2022-04-24 09:05:52
+    Heart Rate: 153 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 5.51 std
+    Time period: Morning
+    Workout: None
+
+[5] CRITICAL ANOMALY
+    Time: 2022-06-18 15:51:46
+    Heart Rate: 99 bpm
+    Type: RestingHeartRate
+    Expected: 74.1 bpm
+    Deviation: 4.50 std
+    Time period: Afternoon
+    Workout: None
+
+[6] CRITICAL ANOMALY
+    Time: 2019-11-23 00:28:23
+    Heart Rate: 131 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.66 std
+    Time period: Night
+    Workout: None
+
+[7] CRITICAL ANOMALY
+    Time: 2019-11-23 00:27:55
+    Heart Rate: 131 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.66 std
+    Time period: Night
+    Workout: None
+
+[8] CRITICAL ANOMALY
+    Time: 2019-03-29 23:00:59
+    Heart Rate: 54 bpm
+    Type: RestingHeartRate
+    Expected: 74.1 bpm
+    Deviation: 3.62 std
+    Time period: Evening
+    Workout: None
+
+[9] CRITICAL ANOMALY
+    Time: 2022-06-25 23:28:27
+    Heart Rate: 130 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.57 std
+    Time period: Evening
+    Workout: None
+
+[10] CRITICAL ANOMALY
+    Time: 2022-07-16 00:49:16
+    Heart Rate: 129 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.49 std
+    Time period: Night
+    Workout: None
+
+[11] CRITICAL ANOMALY
+    Time: 2018-03-11 01:15:38
+    Heart Rate: 128 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.40 std
+    Time period: Night
+    Workout: None
+
+[12] CRITICAL ANOMALY
+    Time: 2019-11-23 00:28:49
+    Heart Rate: 127 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.32 std
+    Time period: Night
+    Workout: None
+
+[13] CRITICAL ANOMALY
+    Time: 2021-05-12 09:43:10
+    Heart Rate: 127 bpm
+    Type: WalkingHeartRateAverage
+    Expected: 99.9 bpm
+    Deviation: 3.23 std
+    Time period: Morning
+    Workout: None
+
+[14] CRITICAL ANOMALY
+    Time: 2021-02-02 06:43:44
+    Heart Rate: 127 bpm
+    Type: WalkingHeartRateAverage
+    Expected: 99.9 bpm
+    Deviation: 3.23 std
+    Time period: Night
+    Workout: None
+
+[15] CRITICAL ANOMALY
+    Time: 2019-03-12 09:33:54
+    Heart Rate: 57 bpm
+    Type: RestingHeartRate
+    Expected: 74.1 bpm
+    Deviation: 3.08 std
+    Time period: Morning
+    Workout: None
+
+[16] CRITICAL ANOMALY
+    Time: 2018-09-03 00:07:48
+    Heart Rate: 57 bpm
+    Type: RestingHeartRate
+    Expected: 74.1 bpm
+    Deviation: 3.08 std
+    Time period: Night
+    Workout: None
+
+[17] CRITICAL ANOMALY
+    Time: 2022-07-16 00:43:37
+    Heart Rate: 124 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 3.07 std
+    Time period: Night
+    Workout: None
+
+[18] HIGH ANOMALY
+    Time: 2019-01-30 20:32:49
+    Heart Rate: 163 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 6.35 std
+    Time period: Evening
+    Workout: Rowing
+
+[19] HIGH ANOMALY
+    Time: 2019-03-25 17:49:32
+    Heart Rate: 158 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 5.92 std
+    Time period: Afternoon
+    Workout: Rowing
+
+[20] HIGH ANOMALY
+    Time: 2022-06-22 21:40:35
+    Heart Rate: 157 bpm
+    Type: HeartRate
+    Expected: 87.6 bpm
+    Deviation: 5.84 std
+    Time period: Evening
+    Workout: Running
+
+================================================================================
