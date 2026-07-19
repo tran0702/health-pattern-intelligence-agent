@@ -1,0 +1,4 @@
+field,metric,value
+is_anomaly,flip_rate,0.0
+confidence,variance,5.320381471369739e-34
+anomaly_type,mean_entropy,0.0

@@ -1,0 +1,8 @@
+{
+  "n_eval": 1530,
+  "n_live_calls": 1504,
+  "mean_latency_s": 0.8323514467858254,
+  "n_geo_phrase": 1398,
+  "model": "gemini-3.1-flash-lite",
+  "mode": "few-shot+C2geo"
+}

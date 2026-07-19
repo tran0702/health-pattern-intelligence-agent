@@ -1,0 +1,279 @@
+<title>RQ1b — Location enrichment C0/C1/C2</title>
+<style>
+  :root{
+    --bg:#F6F9F8; --card:#FFFFFF; --ink:#14201E; --ink2:#485956; --muted:#7C8B88;
+    --grid:#E7EDEB; --hair:#DEE7E4;
+    --c0:#63B3A9; --c1:#2E8C81; --c2:#12574F; --ml:#B26E1B;
+    --shadow:0 1px 2px rgba(20,40,36,.05),0 8px 28px rgba(20,40,36,.06);
+    --font-display:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0E1615; --card:#161F1E; --ink:#EAF1EF; --ink2:#A6B5B2; --muted:#77857F;
+      --grid:#243230; --hair:#27312F;
+      --c0:#3AA093; --c1:#6AC6BB; --c2:#CBF2EB; --ml:#E3A64E;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F6F9F8; --card:#FFFFFF; --ink:#14201E; --ink2:#485956; --muted:#7C8B88;
+    --grid:#E7EDEB; --hair:#DEE7E4;
+    --c0:#63B3A9; --c1:#2E8C81; --c2:#12574F; --ml:#B26E1B;
+    --shadow:0 1px 2px rgba(20,40,36,.05),0 8px 28px rgba(20,40,36,.06);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1615; --card:#161F1E; --ink:#EAF1EF; --ink2:#A6B5B2; --muted:#77857F;
+    --grid:#243230; --hair:#27312F;
+    --c0:#3AA093; --c1:#6AC6BB; --c2:#CBF2EB; --ml:#E3A64E;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0}
+  .wrap{
+    background:var(--bg); color:var(--ink); font-family:var(--font-sans);
+    min-height:100%; padding:40px 24px 56px; -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:980px; margin:0 auto}
+  .eyebrow{
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    font-weight:600; margin:0 0 14px;
+  }
+  h1{
+    font-family:var(--font-display); font-weight:600; color:var(--ink);
+    font-size:clamp(28px,4.4vw,42px); line-height:1.08; letter-spacing:-.01em;
+    margin:0 0 16px; text-wrap:balance;
+  }
+  .thesis{
+    font-size:clamp(16px,2vw,19px); line-height:1.55; color:var(--ink2);
+    max-width:64ch; margin:0 0 6px;
+  }
+  .thesis b{color:var(--ink); font-weight:600}
+  .card{
+    background:var(--card); border:1px solid var(--hair); border-radius:16px;
+    box-shadow:var(--shadow); padding:26px 26px 22px; margin-top:28px;
+  }
+  .card h2{
+    font-family:var(--font-display); font-weight:600; font-size:20px; letter-spacing:-.005em;
+    margin:0 0 4px; color:var(--ink);
+  }
+  .card .sub{font-size:13.5px; color:var(--muted); margin:0 0 18px; line-height:1.5}
+  svg{display:block; width:100%; height:auto; font-family:var(--font-sans)}
+  .scroll{overflow-x:auto}
+  .scroll .inner{min-width:660px}
+  text{fill:var(--ink)}
+  .grid-line{stroke:var(--grid); stroke-width:1}
+  .base-line{stroke:var(--hair); stroke-width:1.5}
+  .ax{fill:var(--muted); font-size:12px}
+  .ax-num{fill:var(--muted); font-size:11.5px; font-variant-numeric:tabular-nums}
+  .xlab{fill:var(--ink); font-size:12.5px; font-weight:500}
+  .xn{fill:var(--muted); font-size:9.5px; font-variant-numeric:tabular-nums}
+  .val{fill:var(--ink2); font-size:10px; font-variant-numeric:tabular-nums; font-weight:600}
+  .bar{cursor:pointer; transition:opacity .12s}
+  .bar:hover{opacity:.82}
+  .bar.c0{fill:var(--c0)} .bar.c1{fill:var(--c1)} .bar.c2{fill:var(--c2)}
+  .ml-line{stroke:var(--ml); stroke-width:2; stroke-dasharray:5 4}
+  .ml-lab{fill:var(--ml); font-size:11.5px; font-weight:600; font-variant-numeric:tabular-nums}
+  .mbar-lab{fill:var(--ink); font-size:13px; font-weight:500}
+  .mbar-val{fill:var(--ink); font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; font-family:var(--font-display)}
+  /* legend */
+  .legend{display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:20px; padding-top:18px; border-top:1px solid var(--hair)}
+  .lg{display:flex; align-items:flex-start; gap:9px; font-size:13px; color:var(--ink2); max-width:280px}
+  .sw{width:13px; height:13px; border-radius:4px; margin-top:2px; flex:0 0 auto}
+  .sw.c0{background:var(--c0)} .sw.c1{background:var(--c1)} .sw.c2{background:var(--c2)}
+  .lg b{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums}
+  .lg span{color:var(--muted); display:block; font-size:12px; margin-top:1px}
+  /* tooltip */
+  .tt{
+    position:fixed; z-index:20; pointer-events:none; opacity:0; transform:translateY(-4px);
+    transition:opacity .1s; background:var(--card); color:var(--ink);
+    border:1px solid var(--hair); border-radius:10px; box-shadow:var(--shadow);
+    padding:10px 12px; font-size:12.5px; min-width:150px;
+  }
+  .tt .h{font-weight:600; margin-bottom:6px; font-family:var(--font-display); font-size:13.5px}
+  .tt .r{display:flex; justify-content:space-between; gap:16px; line-height:1.7}
+  .tt .r span:first-child{color:var(--muted)}
+  .tt .r b{font-variant-numeric:tabular-nums; font-weight:600}
+  .tt .dot{display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+  /* table */
+  details{margin-top:28px; border:1px solid var(--hair); border-radius:12px; background:var(--card); overflow:hidden}
+  summary{cursor:pointer; padding:14px 20px; font-size:13.5px; font-weight:600; color:var(--ink2); list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ "; color:var(--muted)}
+  details[open] summary::before{content:"▾ "}
+  .tbl-scroll{overflow-x:auto; border-top:1px solid var(--hair)}
+  table{border-collapse:collapse; width:100%; min-width:560px; font-size:13px}
+  th,td{padding:9px 14px; text-align:right; font-variant-numeric:tabular-nums; border-bottom:1px solid var(--hair)}
+  th:first-child,td:first-child{text-align:left; font-variant-numeric:normal}
+  thead th{color:var(--muted); font-weight:600; font-size:11.5px; letter-spacing:.03em; text-transform:uppercase}
+  tbody tr:last-child td{border-bottom:none}
+  td.win{color:var(--ink); font-weight:700}
+  .foot{margin-top:26px; font-size:13px; line-height:1.6; color:var(--ink2); max-width:70ch}
+  .foot b{color:var(--ink)}
+  .tag{display:inline-block; font-size:11px; font-weight:600; letter-spacing:.03em; color:var(--ml);
+       border:1px solid color-mix(in srgb, var(--ml) 40%, transparent); border-radius:20px; padding:2px 10px; margin-bottom:14px}
+  @media (max-width:560px){ .wrap{padding:28px 14px 40px} .card{padding:20px 16px 18px} }
+  @media (prefers-reduced-motion:reduce){ .bar{transition:none} }
+</style>
+
+<div class="wrap">
+  <div class="page">
+    <p class="eyebrow">ExtraSensory · context enrichment · RQ1b</p>
+    <h1>Does the language model need coordinates, or meaning?</h1>
+    <p class="thesis">The LLM was weak at guessing <b>where</b> a person is from phone sensors alone. Feeding it <b>raw GPS numbers barely helped</b> — but feeding it a <b>reverse-geocoded place name</b> nearly doubled its accuracy and pushed it past the ML baseline. Its weakness was missing <b>semantic</b> location, not missing coordinates.</p>
+
+    <div class="card">
+      <span class="tag">THE HEADLINE</span>
+      <h2>Overall location accuracy — macro-F1</h2>
+      <p class="sub">Averaged over all eight location classes, on the shared 1,522-sample evaluation set. Higher is better.</p>
+      <svg id="macro" viewBox="0 0 920 168" role="img" aria-label="Macro-F1: C0 0.248, C1 0.307, C2 0.455, ML baseline 0.344"></svg>
+    </div>
+
+    <div class="card">
+      <h2>Per-class F1 — where the semantic cue actually lands</h2>
+      <p class="sub">Classes ordered by how much C2 gains over C0. The rescue is concentrated in the hard, distinctive places on the left (beach, gym, restaurant); the signal-rich classes on the right (transit, outdoors) were already fine. Hover any bar for detail.</p>
+      <div class="scroll"><div class="inner">
+        <svg id="chart" viewBox="0 0 920 470" role="img" aria-label="Grouped bar chart of per-class F1 for conditions C0, C1, C2"></svg>
+      </div></div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <details>
+      <summary>Full numbers (F1, with recall)</summary>
+      <div class="tbl-scroll">
+        <table id="tbl">
+          <thead><tr><th>Location class</th><th>n</th><th>C0 F1</th><th>C1 F1</th><th>C2 F1</th><th>C2 recall</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </details>
+
+    <p class="foot"><b>How to read it, honestly.</b> C2 is an <b>LLM + geocoder hybrid</b> — a coordinate near “…State Beach…” makes <i>beach</i> easy, so the geocoder does real work. The finding is that the LLM <i>correctly uses</i> semantic location, not that it reasons brilliantly on its own. And this is not a clean LLM-beats-ML claim: ML was never given the coordinates, since raw location is nearly a per-person identifier (the source paper excluded it on purpose). Read it as: <b>semantic location unlocks the LLM.</b></p>
+  </div>
+</div>
+<div class="tt" id="tt" aria-hidden="true"></div>
+
+<script>
+(function(){
+  const SVGNS="http://www.w3.org/2000/svg";
+  const el=(n,a)=>{const e=document.createElementNS(SVGNS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const COND=["C0","C1","C2"];
+  const COND_FULL=["C0 · sensor summary only","C1 · + raw GPS coordinates","C2 · + reverse-geocoded place"];
+  const COND_DESC=["The frozen baseline the LLM started from.","Bare “latitude x, longitude y” added to the prompt.","A human-readable place name added to the prompt."];
+  const DATA=[
+    {c:"gym",        n:200, f1:[0.077,0.149,0.589], rec:[0.05,0.09,0.45]},
+    {c:"beach",      n:130, f1:[0.000,0.015,0.426], rec:[0.00,0.01,0.28]},
+    {c:"restaurant", n:200, f1:[0.059,0.112,0.470], rec:[0.04,0.07,0.41]},
+    {c:"work",       n:200, f1:[0.313,0.549,0.593], rec:[0.30,0.64,0.68]},
+    {c:"home",       n:200, f1:[0.432,0.493,0.494], rec:[0.87,0.83,0.78]},
+    {c:"unknown",    n:192, f1:[0.081,0.111,0.092], rec:[0.09,0.13,0.08]},
+    {c:"transit",    n:200, f1:[0.677,0.683,0.665], rec:[0.56,0.57,0.67]},
+    {c:"outdoors",   n:200, f1:[0.343,0.344,0.311], rec:[0.43,0.45,0.32]},
+  ];
+  const MACRO=[0.248,0.307,0.455], ML=0.344;
+  const fmt=v=>v.toFixed(v===0?2:(v<0.1?3:2)).replace(/^0/,"").replace(/^-0/,"-");
+  const fmt3=v=>v.toFixed(3).replace(/^0/,"");
+  const f2=v=>v.toFixed(2).replace(/^0/,"");
+
+  const tt=document.getElementById("tt");
+  function showTT(html,x,y){tt.innerHTML=html;tt.style.opacity="1";tt.style.left=Math.min(x+14,innerWidth-190)+"px";tt.style.top=(y-10)+"px";}
+  function hideTT(){tt.style.opacity="0";}
+
+  function topRound(x,y,w,h,r){
+    if(h<=0.5) return "";
+    r=Math.min(r,w/2,h);
+    return `M${x},${y+h} L${x},${y+r} Q${x},${y} ${x+r},${y} L${x+w-r},${y} Q${x+w},${y} ${x+w},${y+r} L${x+w},${y+h} Z`;
+  }
+
+  /* ---- main grouped bar chart ---- */
+  (function chart(){
+    const svg=document.getElementById("chart");
+    const W=920,H=470, mT=26,mR=14,mB=88,mL=46;
+    const pw=W-mL-mR, ph=H-mT-mB, y0=mT+ph, yMax=0.66;
+    const Y=v=>mT+ph*(1-v/yMax);
+    // gridlines
+    for(let g=0;g<=6;g++){
+      const v=g/10, yy=Y(v);
+      svg.appendChild(el("line",{x1:mL,y1:yy,x2:mL+pw,y2:yy,class:g===0?"base-line":"grid-line"}));
+      const t=el("text",{x:mL-9,y:yy+4,class:"ax-num","text-anchor":"end"}); t.textContent=f2(v); svg.appendChild(t);
+    }
+    const gW=pw/DATA.length, gPad=14, inW=gW-2*gPad, gap=4, bW=(inW-2*gap)/3;
+    DATA.forEach((d,gi)=>{
+      const gx=mL+gi*gW+gPad;
+      d.f1.forEach((v,ci)=>{
+        const x=gx+ci*(bW+gap), h=ph*(v/yMax), y=Y(v);
+        const p=topRound(x,y,bW,h,4);
+        if(p){
+          const cls=COND[ci].toLowerCase();
+          const path=el("path",{d:p,class:"bar "+cls});
+          path.addEventListener("mousemove",e=>showTT(
+            `<div class="h"><span class="dot" style="background:var(--${cls})"></span>${d.c} · ${COND[ci]}</div>`+
+            `<div class="r"><span>${COND_FULL[ci].split('·')[1].trim()}</span></div>`+
+            `<div class="r"><span>F1 score</span><b>${fmt(v)}</b></div>`+
+            `<div class="r"><span>recall</span><b>${fmt(d.rec[ci])}</b></div>`+
+            `<div class="r"><span>samples</span><b>${d.n}</b></div>`, e.clientX,e.clientY));
+          path.addEventListener("mouseleave",hideTT);
+          svg.appendChild(path);
+        }
+        // value label above bar
+        const lab=el("text",{x:x+bW/2,y:Math.min(y-4,y0-2),class:"val","text-anchor":"middle"});
+        lab.textContent=fmt(v); svg.appendChild(lab);
+      });
+      // x label + support
+      const cx=gx+inW/2;
+      const t=el("text",{x:cx,y:y0+22,class:"xlab","text-anchor":"middle"}); t.textContent=d.c; svg.appendChild(t);
+      const nn=el("text",{x:cx,y:y0+37,class:"xn","text-anchor":"middle"}); nn.textContent="n="+d.n; svg.appendChild(nn);
+    });
+    // y axis title
+    const yt=el("text",{x:mL-30,y:mT-10,class:"ax","text-anchor":"start"}); yt.textContent="F1 score"; svg.appendChild(yt);
+  })();
+
+  /* ---- macro strip ---- */
+  (function macro(){
+    const svg=document.getElementById("macro");
+    const W=920,H=168, mL=150, mR=70, mT=10, rowH=34, barH=22, gap=(H-mT-8-3*rowH)/1;
+    const pw=W-mL-mR, xMax=0.5, X=v=>mL+pw*(v/xMax);
+    // threshold line (ML)
+    const mx=X(ML), lineBottom=mT+3*rowH+6;
+    svg.appendChild(el("line",{x1:mx,y1:mT+2,x2:mx,y2:lineBottom,class:"ml-line"}));
+    const mlab=el("text",{x:mx,y:lineBottom+18,class:"ml-lab","text-anchor":"middle"});
+    mlab.textContent="ML baseline "+fmt3(ML); svg.appendChild(mlab);
+    MACRO.forEach((v,i)=>{
+      const y=mT+i*rowH, cls=COND[i].toLowerCase();
+      // track
+      svg.appendChild(el("rect",{x:mL,y:y+ (rowH-barH)/2,width:pw,height:barH,rx:6,fill:"var(--grid)"}));
+      // bar
+      svg.appendChild(el("rect",{x:mL,y:y+(rowH-barH)/2,width:Math.max(2,X(v)-mL),height:barH,rx:6,class:"",fill:`var(--${cls})`}));
+      // label left
+      const lab=el("text",{x:mL-14,y:y+rowH/2+5,class:"mbar-lab","text-anchor":"end"});
+      lab.textContent=COND_FULL[i].replace('·','—'); svg.appendChild(lab);
+      // value right
+      const val=el("text",{x:X(v)+10,y:y+rowH/2+6,class:"mbar-val","text-anchor":"start"});
+      val.textContent=fmt3(v); svg.appendChild(val);
+    });
+  })();
+
+  /* ---- legend ---- */
+  (function(){
+    const L=document.getElementById("legend");
+    COND.forEach((c,i)=>{
+      const d=document.createElement("div"); d.className="lg";
+      d.innerHTML=`<span class="sw ${c.toLowerCase()}"></span><div><b>${COND_FULL[i]}</b><span>${COND_DESC[i]}</span></div>`;
+      L.appendChild(d);
+    });
+  })();
+
+  /* ---- table ---- */
+  (function(){
+    const tb=document.querySelector("#tbl tbody");
+    DATA.forEach(d=>{
+      const win=d.f1.indexOf(Math.max(...d.f1));
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${d.c}</td><td>${d.n}</td>`+
+        d.f1.map((v,i)=>`<td class="${i===win?'win':''}">${fmt(v)}</td>`).join("")+
+        `<td>${fmt(d.rec[2])}</td>`;
+      tb.appendChild(tr);
+    });
+  })();
+})();
+</script>

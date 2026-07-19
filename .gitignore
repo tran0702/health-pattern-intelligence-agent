@@ -69,6 +69,7 @@ config/credentials.json
 *.tmp
 *.temp
 *.log
+f2.txt
 
 # OS Files
 Thumbs.db

@@ -1,0 +1,4 @@
+anomaly_type,n_pos,baseline_ROC,GNN_ROC,baseline_PRAUC,GNN_PRAUC,baseline_F1,GNN_F1
+SPIKE (node),10,1.0,0.978,1.0,0.588,1.0,0.667
+PHASE (node),45,0.995,0.802,0.815,0.078,0.8,0.187
+TRANSITION (edge),150,0.68,0.799,0.025,0.204,0.087,0.401

@@ -1,0 +1,8 @@
+{
+  "n_eval": 1530,
+  "n_live_calls": 1508,
+  "mean_latency_s": 0.9182839690848434,
+  "n_coord_cue": 1398,
+  "model": "gemini-3.1-flash-lite",
+  "mode": "few-shot+C1rawcoords"
+}

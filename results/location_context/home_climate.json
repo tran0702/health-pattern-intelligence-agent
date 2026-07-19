@@ -1,0 +1,12 @@
+{
+  "place": "Gamma Crescent, Panorama",
+  "coord": [
+    -35.00462,
+    138.59756
+  ],
+  "band": "temperate",
+  "temp_median": 14.3,
+  "temp_p10": 9.0,
+  "temp_p90": 24.8,
+  "source": "geocode+weather"
+}

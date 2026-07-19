@@ -1,0 +1,8 @@
+{
+  "n_eval": 1530,
+  "n_live_calls": 1503,
+  "mean_latency_s": 0.842623231415739,
+  "parse_errors": 0,
+  "model": "gemini-3.1-flash-lite",
+  "mode": "few-shot"
+}
