@@ -9,6 +9,15 @@ import sys
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Load the repo-root .env so GEMINI_API_KEY is available (real key lives there;
+# see .env.example). Every other track already loads this same file.
+try:
+    from pathlib import Path
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+except ImportError:
+    pass
+
 from health_pattern_agent import HealthPatternAgent
 
 
@@ -51,9 +60,8 @@ def main():
         return
 
     workout_file = WORKOUT_FILE if os.path.exists(WORKOUT_FILE) else None
-    anomaly_file = ANOMALY_FILE if os.path.exists(ANOMALY_FILE) else None
 
-    agent.load_data(HR_FILE, workout_file, anomaly_file)
+    agent.load_data(HR_FILE, workout_file)
 
     # --- Interactive Menu ---
     while True:

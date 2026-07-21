@@ -12,10 +12,20 @@ from typing import Dict, List, Tuple
 import warnings
 warnings.filterwarnings('ignore')
 
+# Load the repo-root .env so GEMINI_API_KEY is available (real key lives there;
+# see .env.example). Every other track already loads this same file.
 try:
-    import google.generativeai as genai
+    from pathlib import Path
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 except ImportError:
-    print("❌ Install: pip install google-generativeai")
+    pass
+
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    print("❌ Install: pip install google-genai")
     exit(1)
 
 
@@ -30,8 +40,8 @@ class GeminiAnomalyAgent:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY required")
         
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        self.client = genai.Client(api_key=self.api_key)
+        self.model_name = 'gemini-2.5-flash-lite'
         
         self.hr_df = None
         self.workout_df = None
@@ -133,13 +143,14 @@ class GeminiAnomalyAgent:
     def _call_gemini(self, prompt: str, temperature: float = 0.3) -> str:
         """Call Gemini with error handling."""
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config={
-                    'temperature': temperature,
-                    'top_p': 0.95,
-                    'max_output_tokens': 8192,
-                }
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=temperature,
+                    top_p=0.95,
+                    max_output_tokens=8192,
+                ),
             )
             return response.text
         except Exception as e:

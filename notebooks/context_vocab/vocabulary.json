@@ -1,0 +1,691 @@
+{
+  "meta": {
+    "source": "llm",
+    "model": "gemini-3.1-flash-lite",
+    "n_dimensions": 10,
+    "n_terms": 70,
+    "per_dimension_source": {
+      "demographic": "llm",
+      "heart_health": "llm",
+      "medical_conditions": "llm",
+      "occupation": "llm",
+      "geographic_location": "llm",
+      "weather": "llm",
+      "workout_type": "llm",
+      "workout_duration": "llm",
+      "workout_location": "llm",
+      "sleep": "llm"
+    }
+  },
+  "dimensions": {
+    "demographic": {
+      "dimension": "demographic",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_provided",
+            "missing",
+            "unspecified"
+          ],
+          "physio_note": "Baseline physiological norms cannot be determined without demographic context."
+        },
+        {
+          "value": "child_female",
+          "aliases": [
+            "girl",
+            "female_pediatric"
+          ],
+          "physio_note": "Higher resting heart rate and lower HRV compared to adults due to autonomic maturation."
+        },
+        {
+          "value": "child_male",
+          "aliases": [
+            "boy",
+            "male_pediatric"
+          ],
+          "physio_note": "Higher resting heart rate and lower HRV compared to adults due to autonomic maturation."
+        },
+        {
+          "value": "adult_female_young",
+          "aliases": [
+            "woman_18_35",
+            "female_young_adult"
+          ],
+          "physio_note": "Higher resting heart rate than males; HRV influenced by menstrual cycle phases."
+        },
+        {
+          "value": "adult_male_young",
+          "aliases": [
+            "man_18_35",
+            "male_young_adult"
+          ],
+          "physio_note": "Lower resting heart rate and higher stroke volume compared to females."
+        },
+        {
+          "value": "adult_female_middle",
+          "aliases": [
+            "woman_36_55",
+            "female_middle_aged"
+          ],
+          "physio_note": "HRV may show increased variability or decline during perimenopause."
+        },
+        {
+          "value": "adult_male_middle",
+          "aliases": [
+            "man_36_55",
+            "male_middle_aged"
+          ],
+          "physio_note": "Gradual decline in maximum heart rate and HRV typically observed."
+        },
+        {
+          "value": "adult_female_senior",
+          "aliases": [
+            "woman_55_plus",
+            "female_elderly"
+          ],
+          "physio_note": "Lower resting heart rate and reduced HRV complexity due to age-related autonomic changes."
+        },
+        {
+          "value": "adult_male_senior",
+          "aliases": [
+            "man_55_plus",
+            "male_elderly"
+          ],
+          "physio_note": "Lower resting heart rate and reduced HRV complexity due to age-related autonomic changes."
+        }
+      ]
+    },
+    "heart_health": {
+      "dimension": "heart_health",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_available",
+            "missing_data",
+            "unclassified"
+          ],
+          "physio_note": "Baseline data insufficient to establish a cardiovascular fitness profile."
+        },
+        {
+          "value": "elite_athletic",
+          "aliases": [
+            "high_performance",
+            "cardiac_athlete",
+            "superior_fitness"
+          ],
+          "physio_note": "Characterized by very low resting heart rate and high vagal tone, often showing rapid heart rate recovery."
+        },
+        {
+          "value": "healthy_active",
+          "aliases": [
+            "fit",
+            "good_cardiovascular_health",
+            "physically_active"
+          ],
+          "physio_note": "Normal resting heart rate range with consistent HRV patterns indicating efficient autonomic nervous system regulation."
+        },
+        {
+          "value": "average_sedentary",
+          "aliases": [
+            "baseline",
+            "standard",
+            "moderate_fitness"
+          ],
+          "physio_note": "Typical resting heart rate and HRV values for a non-athletic population; serves as the standard reference point."
+        },
+        {
+          "value": "at_risk",
+          "aliases": [
+            "elevated_cardiac_risk",
+            "poor_fitness",
+            "deconditioned"
+          ],
+          "physio_note": "Often associated with higher resting heart rates and reduced HRV, potentially indicating autonomic imbalance or cardiovascular strain."
+        }
+      ]
+    },
+    "medical_conditions": {
+      "dimension": "medical_conditions",
+      "terms": [
+        {
+          "value": "none",
+          "aliases": [
+            "healthy",
+            "no_known_conditions",
+            "asymptomatic"
+          ],
+          "physio_note": "Baseline physiological parameters follow standard age-adjusted normative ranges."
+        },
+        {
+          "value": "hypertension",
+          "aliases": [
+            "high_blood_pressure",
+            "essential_hypertension"
+          ],
+          "physio_note": "Often associated with reduced HRV and elevated resting heart rate due to increased sympathetic tone."
+        },
+        {
+          "value": "arrhythmia",
+          "aliases": [
+            "atrial_fibrillation",
+            "afib",
+            "tachycardia",
+            "bradycardia",
+            "irregular_heartbeat"
+          ],
+          "physio_note": "Directly disrupts R-R interval regularity, rendering standard HRV metrics unreliable."
+        },
+        {
+          "value": "diabetes_mellitus",
+          "aliases": [
+            "type_1_diabetes",
+            "type_2_diabetes",
+            "insulin_dependent"
+          ],
+          "physio_note": "Frequently leads to autonomic neuropathy, resulting in blunted heart rate variability and elevated resting heart rate."
+        },
+        {
+          "value": "pregnancy",
+          "aliases": [
+            "gestational_period",
+            "expecting"
+          ],
+          "physio_note": "Characterized by a progressive increase in resting heart rate and significant shifts in autonomic balance throughout trimesters."
+        },
+        {
+          "value": "thyroid_disorder",
+          "aliases": [
+            "hyperthyroidism",
+            "hypothyroidism",
+            "graves_disease",
+            "hashimotos"
+          ],
+          "physio_note": "Hyperthyroidism typically elevates resting heart rate, while hypothyroidism may induce bradycardia."
+        },
+        {
+          "value": "cardiac_history",
+          "aliases": [
+            "post_myocardial_infarction",
+            "heart_failure",
+            "coronary_artery_disease"
+          ],
+          "physio_note": "Structural heart changes often result in reduced cardiac reserve and altered autonomic regulation."
+        },
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_provided",
+            "missing_data",
+            "unspecified"
+          ],
+          "physio_note": "Data insufficient to determine physiological baseline adjustments."
+        }
+      ]
+    },
+    "occupation": {
+      "dimension": "occupation",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not specified",
+            "missing",
+            "n/a"
+          ],
+          "physio_note": "Baseline metrics are treated as population averages due to lack of specific activity context."
+        },
+        {
+          "value": "sedentary_office",
+          "aliases": [
+            "desk job",
+            "white collar",
+            "corporate"
+          ],
+          "physio_note": "Characterized by low daily energy expenditure and potential for postural-related HRV suppression."
+        },
+        {
+          "value": "manual_labor",
+          "aliases": [
+            "blue collar",
+            "construction",
+            "physical trade"
+          ],
+          "physio_note": "High physical load throughout the day leads to elevated resting heart rate and potential cumulative fatigue."
+        },
+        {
+          "value": "shift_worker",
+          "aliases": [
+            "night shift",
+            "rotating schedule",
+            "irregular hours"
+          ],
+          "physio_note": "Circadian misalignment often results in blunted HRV and elevated heart rate during typical sleep windows."
+        },
+        {
+          "value": "professional_athlete",
+          "aliases": [
+            "elite athlete",
+            "pro sports"
+          ],
+          "physio_note": "High vagal tone typically results in a significantly lower resting heart rate and higher baseline HRV."
+        },
+        {
+          "value": "healthcare_professional",
+          "aliases": [
+            "nurse",
+            "doctor",
+            "clinical staff"
+          ],
+          "physio_note": "High cognitive and emotional stress combined with irregular physical activity often leads to increased sympathetic dominance."
+        },
+        {
+          "value": "student",
+          "aliases": [
+            "academic",
+            "university"
+          ],
+          "physio_note": "Irregular sleep patterns and high cognitive load can cause significant fluctuations in daily HRV."
+        },
+        {
+          "value": "retired",
+          "aliases": [
+            "senior",
+            "non-working"
+          ],
+          "physio_note": "Baseline metrics are generally more stable but may reflect age-related changes in autonomic nervous system responsiveness."
+        }
+      ]
+    },
+    "geographic_location": {
+      "dimension": "geographic_location",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_specified",
+            "missing",
+            "n/a"
+          ],
+          "physio_note": "Baseline physiological parameters are indeterminate without environmental context."
+        },
+        {
+          "value": "temperate",
+          "aliases": [
+            "moderate",
+            "mild_climate",
+            "continental"
+          ],
+          "physio_note": "Serves as the standard reference for autonomic nervous system regulation without extreme thermal stress."
+        },
+        {
+          "value": "hot_arid",
+          "aliases": [
+            "desert",
+            "dry_heat",
+            "xeric"
+          ],
+          "physio_note": "Increased resting heart rate due to peripheral vasodilation and fluid loss for evaporative cooling."
+        },
+        {
+          "value": "hot_humid",
+          "aliases": [
+            "tropical",
+            "equatorial",
+            "muggy"
+          ],
+          "physio_note": "Elevated cardiovascular strain as high humidity limits sweat evaporation, increasing core temperature and heart rate."
+        },
+        {
+          "value": "cold",
+          "aliases": [
+            "arctic",
+            "polar",
+            "subarctic"
+          ],
+          "physio_note": "Initial increase in heart rate due to sympathetic activation and peripheral vasoconstriction to conserve core heat."
+        },
+        {
+          "value": "high_altitude",
+          "aliases": [
+            "mountainous",
+            "alpine",
+            "hypoxic"
+          ],
+          "physio_note": "Persistent elevation in resting heart rate and reduced HRV due to chronic hypoxic stress and increased sympathetic tone."
+        }
+      ]
+    },
+    "weather": {
+      "dimension": "weather",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_recorded",
+            "missing_data",
+            "n/a"
+          ],
+          "physio_note": "Baseline physiological state cannot be adjusted for environmental thermal stress."
+        },
+        {
+          "value": "thermoneutral",
+          "aliases": [
+            "comfortable",
+            "mild",
+            "temperate",
+            "optimal"
+          ],
+          "physio_note": "Minimal thermoregulatory demand; heart rate and HRV reflect resting metabolic baseline."
+        },
+        {
+          "value": "cold_stress",
+          "aliases": [
+            "chilly",
+            "freezing",
+            "cold_exposure"
+          ],
+          "physio_note": "Peripheral vasoconstriction and shivering thermogenesis increase metabolic rate and heart rate."
+        },
+        {
+          "value": "heat_stress",
+          "aliases": [
+            "hot",
+            "warm",
+            "high_temperature"
+          ],
+          "physio_note": "Vasodilation and increased skin blood flow elevate heart rate to maintain cardiac output and cooling."
+        },
+        {
+          "value": "high_humidity",
+          "aliases": [
+            "muggy",
+            "humid",
+            "damp"
+          ],
+          "physio_note": "Reduced evaporative cooling efficiency forces higher heart rate to manage core temperature elevation."
+        },
+        {
+          "value": "extreme_heatwave",
+          "aliases": [
+            "heat_index_extreme",
+            "dangerous_heat"
+          ],
+          "physio_note": "Significant cardiovascular strain; heart rate is elevated due to sustained thermoregulatory demand and potential dehydration."
+        }
+      ]
+    },
+    "workout_type": {
+      "dimension": "workout_type",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_recorded",
+            "missing",
+            "n/a"
+          ],
+          "physio_note": "Baseline physiological state is undefined; no specific heart rate expectation."
+        },
+        {
+          "value": "steady_state_cardio",
+          "aliases": [
+            "run",
+            "jog",
+            "cycle",
+            "row",
+            "elliptical"
+          ],
+          "physio_note": "Characterized by a gradual rise to a stable heart rate plateau with predictable HRV suppression."
+        },
+        {
+          "value": "high_intensity_interval",
+          "aliases": [
+            "hiit",
+            "sprints",
+            "circuit_training"
+          ],
+          "physio_note": "Rapid heart rate spikes followed by incomplete recovery periods; significant autonomic nervous system strain."
+        },
+        {
+          "value": "resistance_training",
+          "aliases": [
+            "weightlifting",
+            "strength",
+            "bodybuilding",
+            "powerlifting"
+          ],
+          "physio_note": "Heart rate response is intermittent and influenced by Valsalva maneuvers and peripheral resistance."
+        },
+        {
+          "value": "low_impact_steady",
+          "aliases": [
+            "walk",
+            "hiking",
+            "leisure_cycling"
+          ],
+          "physio_note": "Maintains heart rate near aerobic threshold with minimal HRV volatility compared to high-intensity efforts."
+        },
+        {
+          "value": "mind_body",
+          "aliases": [
+            "yoga",
+            "pilates",
+            "stretching",
+            "meditation"
+          ],
+          "physio_note": "Typically lowers heart rate and increases HRV through parasympathetic activation and controlled breathing."
+        },
+        {
+          "value": "aquatic_exercise",
+          "aliases": [
+            "swimming",
+            "water_aerobics"
+          ],
+          "physio_note": "Hydrostatic pressure and horizontal body position result in lower resting heart rates compared to land-based equivalents."
+        }
+      ]
+    },
+    "workout_duration": {
+      "dimension": "workout_duration",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not_recorded",
+            "missing_data",
+            "undefined"
+          ],
+          "physio_note": "Duration is unavailable; baseline heart rate variability cannot be adjusted for exercise load."
+        },
+        {
+          "value": "very_short",
+          "aliases": [
+            "quick_session",
+            "warm_up_only",
+            "brief"
+          ],
+          "physio_note": "Duration is 1-15 minutes; minimal impact on long-term HRV recovery."
+        },
+        {
+          "value": "short",
+          "aliases": [
+            "standard_short",
+            "light_workout"
+          ],
+          "physio_note": "Duration is 16-30 minutes; moderate sympathetic activation with rapid return to baseline."
+        },
+        {
+          "value": "moderate",
+          "aliases": [
+            "typical_workout",
+            "average_session"
+          ],
+          "physio_note": "Duration is 31-60 minutes; significant metabolic demand requiring standard post-exercise recovery."
+        },
+        {
+          "value": "long",
+          "aliases": [
+            "extended_session",
+            "heavy_workout"
+          ],
+          "physio_note": "Duration is 61-120 minutes; sustained sympathetic dominance likely to suppress HRV for several hours."
+        },
+        {
+          "value": "endurance",
+          "aliases": [
+            "marathon",
+            "ultra",
+            "prolonged_effort"
+          ],
+          "physio_note": "Duration is 121+ minutes; high risk of autonomic nervous system fatigue and prolonged recovery requirements."
+        }
+      ]
+    },
+    "workout_location": {
+      "dimension": "workout_location",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "not specified",
+            "n/a",
+            "missing"
+          ],
+          "physio_note": "Baseline physiological expectations remain neutral without environmental context."
+        },
+        {
+          "value": "indoor_gym",
+          "aliases": [
+            "fitness center",
+            "weight room",
+            "health club"
+          ],
+          "physio_note": "Controlled climate typically minimizes thermoregulatory stress on heart rate."
+        },
+        {
+          "value": "home_workout",
+          "aliases": [
+            "living room",
+            "garage gym",
+            "home studio"
+          ],
+          "physio_note": "Familiar environment often correlates with lower psychological stress markers."
+        },
+        {
+          "value": "outdoor_road",
+          "aliases": [
+            "street",
+            "pavement",
+            "urban running"
+          ],
+          "physio_note": "Exposure to traffic and uneven surfaces may increase sympathetic nervous system activation."
+        },
+        {
+          "value": "outdoor_trail",
+          "aliases": [
+            "hiking path",
+            "off-road",
+            "mountain trail"
+          ],
+          "physio_note": "Variable terrain and elevation changes significantly increase heart rate variability demands."
+        },
+        {
+          "value": "park",
+          "aliases": [
+            "public green space",
+            "track",
+            "field"
+          ],
+          "physio_note": "Open air environments generally support stable heart rate recovery compared to urban heat islands."
+        },
+        {
+          "value": "pool",
+          "aliases": [
+            "swimming pool",
+            "natatorium"
+          ],
+          "physio_note": "Hydrostatic pressure and horizontal body position lower resting heart rate compared to land-based exercise."
+        },
+        {
+          "value": "open_water",
+          "aliases": [
+            "lake",
+            "ocean",
+            "sea"
+          ],
+          "physio_note": "Cold water immersion and currents increase metabolic cost and heart rate response."
+        },
+        {
+          "value": "studio",
+          "aliases": [
+            "yoga studio",
+            "pilates studio",
+            "group class"
+          ],
+          "physio_note": "Structured environments often involve guided breathing which can modulate HRV."
+        }
+      ]
+    },
+    "sleep": {
+      "dimension": "sleep",
+      "terms": [
+        {
+          "value": "unknown",
+          "aliases": [
+            "missing",
+            "no_data",
+            "untracked"
+          ],
+          "physio_note": "Baseline metrics cannot be established due to lack of overnight sensor coverage."
+        },
+        {
+          "value": "restful",
+          "aliases": [
+            "deep_sleep",
+            "high_quality",
+            "restorative"
+          ],
+          "physio_note": "Characterized by a pronounced nocturnal heart rate dip and high HRV stability, indicating optimal autonomic recovery."
+        },
+        {
+          "value": "adequate",
+          "aliases": [
+            "normal",
+            "sufficient",
+            "standard"
+          ],
+          "physio_note": "Expected physiological baseline with a moderate heart rate decline and typical HRV fluctuations throughout the night."
+        },
+        {
+          "value": "short",
+          "aliases": [
+            "insufficient",
+            "sleep_deprived",
+            "under_rested"
+          ],
+          "physio_note": "Reduced duration limits the time available for parasympathetic dominance, often resulting in a higher average nocturnal heart rate."
+        },
+        {
+          "value": "fragmented",
+          "aliases": [
+            "interrupted",
+            "restless",
+            "broken"
+          ],
+          "physio_note": "Frequent heart rate spikes and HRV drops suggest sympathetic nervous system arousal during the sleep cycle."
+        },
+        {
+          "value": "irregular",
+          "aliases": [
+            "inconsistent",
+            "circadian_mismatch",
+            "shift_work"
+          ],
+          "physio_note": "Variable sleep timing prevents the stabilization of circadian rhythms, leading to unpredictable heart rate and HRV baseline shifts."
+        }
+      ]
+    }
+  }
+}
