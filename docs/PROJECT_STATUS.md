@@ -77,7 +77,7 @@ occupation · demographic attributes
 |---|---|---|
 | **1** | LLM tự sinh context vocabulary (không gõ tay) | ✅ **XONG** — 10 chiều/70 term, **10/10 từ LLM thật**, freeze `vocabulary.json` + code-gen `generated_vocab.py` |
 | **2** | Tự phân loại 2 cấp trên dataset **bất kỳ**: **Global** (dataset nói về gì) + **Individual** (người này là ai) | ✅ **XONG** — Individual ✅ (đã gỡ circularity §4①) · Global ✅ (`global_context.py`, §4②) · **bước 6 nối prior ✅** (`global_prior_from_context` → `build_subject_context`, confidence-gated) · (enhancement `occupation`/`sleep` predictor từ data = §4④, không chặn Task 2) |
-| **3** | Thử nghiệm mô hình Transformer cho trích xuất ngữ cảnh | ⏸ sau Task 2 |
+| **3** | Thử nghiệm mô hình Transformer cho trích xuất ngữ cảnh | ⏳ **ĐANG LÀM** — plan duyệt, `ee_transformer.py` đã viết (chưa chạy); còn `E6_transformer.py` + mở rộng E4 (§4⑤) |
 
 **Đã có sẵn & chạy được cho Task 2:** `build_subject_context` **tự động** gán `age_band` /
 `fitness_level` / `home_climate`; chuỗi `SubjectContext → establish_baseline →
@@ -251,6 +251,47 @@ predictor nào**. Suy từ **nhịp thời gian**: tương phản ngày thườn
 
 ⚠️ Tín hiệu yếu (chỉ HR + GPS thưa) → thiết kế để **confidence thấp → rơi về `unknown`** qua gate
 `min_conf`, chấp nhận user override. Thà `unknown` còn hơn đoán bừa.
+
+### ⑤ Task 3 — Transformer arm cho context extraction (plan duyệt 2026-07-22, ĐANG LÀM)
+
+**Nhà = track cô lập `notebooks/enrichment_experiment/`** — đã có sẵn gold labels + 5-fold CV chia
+theo user (leak-free) + **ML control** (E3 `SGDClassifier`) + **LLM arm** (Gemini few-shot) + khung
+đánh giá E4 (macro-F1 + bootstrap CI theo user). Dữ liệu Apple-Health (n=1, không nhãn) **không**
+train/eval supervised được → ExtraSensory là nơi duy nhất Task 3 chặt chẽ. Deliverable = **bảng
+LLM vs ML vs Transformer** apples-to-apples để trình Asara.
+
+💡 **Quyết định chốt:** Transformer đọc **TRỰC TIẾP 225 feature số** (FT-Transformer / feature-token),
+**KHÔNG** phải Transformer trên chuỗi text — model text huấn luyện từ đầu trên ~40k câu ngắn sẽ học
+embedding kém, không đo đúng năng lực Transformer; feature-token attention là cách chuẩn cho tabular +
+so trực tiếp được với ML control (cùng 225 feature). **CPU-only**, torch 2.10.0+cpu đã cài, **không cần
+API key**.
+
+**Kiến trúc code + trạng thái:**
+- ✅ **`ee_transformer.py` ĐÃ VIẾT (chưa chạy/verify):** `FeatureTokenizer` (1 token/feature, affine per-
+  feature + `[CLS]`) · `GroupTokenizer` (fallback ~12 token/nhóm sensor theo prefix cột) · `ContextTransformer`
+  (encoder d_model=64, 2 lớp, 4 head, GELU → pool `[CLS]` → **3 head multi-task** location/activity/companion) ·
+  `_preprocess` (median impute + StandardScaler, fit per-fold trên train — **y hệt ML control E3**) ·
+  `tf_fit_predict(fold)` (train + predict **full test**, loss mask theo `elig_<field>`, class-weight balanced,
+  trả frame **cùng schema `e3_pred_ml.parquet`**) · `selftest` (determinism 2 lần seeded). `TFConfig`:
+  `token_mode=feature|group`, `train_cap=60_000`, `epochs=8`, `batch=512`, `lr=1e-3`, `seed=0`.
+- ⏳ **`E6_transformer.py` CHƯA:** script chạy 5 fold → lưu `results/enrichment_experiment/e6_pred_transformer.parquet`
+  + `e6_transformer_meta.json` (config, giây/fold, macro-F1 eval + full-test). Flags: `--group`, `--selftest`.
+- ⏳ **Mở rộng `E4_evaluation.ipynb` CHƯA:** thêm arm `"Transformer"` (guard theo pattern `has_llm` → E4 vẫn
+  chạy nếu thiếu parquet), bảng **3-way** + **bootstrap CI** `Transformer−ML` và `Transformer−LLM` theo user →
+  `e4_three_way.csv`. Tái dùng `field_scores`/`coverage_overconfidence`/vòng bootstrap có sẵn.
+- ⏳ **`context_enrichment_experiment_plan.md` §RQ1c CHƯA:** ghi câu hỏi + method + quyết định numeric-vs-text.
+
+**Stretch tùy chọn (CHƯA làm, gate sau khi user OK):** temporal sequence Transformer (`E6b_temporal.py`) —
+cửa sổ K mẫu lịch sử/người, predict nhãn mẫu trung tâm (vẫn per-sample để so được), thêm arm thứ 4 vào E4.
+
+**Compute:** model nhỏ CPU ~vài phút/fold (~15–40′ full CV); nếu chậm → bật `token_mode="group"` (cắt token
+226→~12). ⚠️ **Probe timing bị ngắt (chưa chạy xong)** → session sau probe lại fold 0 trước khi chạy full.
+
+**Verify (§9):** `cd notebooks/enrichment_experiment && python E6_transformer.py` → parquet + meta, in macro-F1;
+`--selftest` assert 2 lần seeded trùng khớp; re-run E4 nbconvert → bảng 3-way + CI; assert index khớp gold, không NaN.
+
+> 📄 Bản plan English đầy đủ (đã duyệt): `.claude/plans/gleaming-doodling-cosmos.md` (ngoài repo — nội dung cốt
+> lõi đã tóm ở đây để git giữ được).
 
 ---
 
