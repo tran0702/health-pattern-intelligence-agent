@@ -4,6 +4,9 @@ context_profile.py — Task 1 (Asara): the DEFINED context profile (the "spine")
 Asara gave a context profile to seed vocabulary generation:
   weather, geographic location, workout type, workout duration, workout location,
   sleep, heart health, medical conditions (current & past), occupation, demographic.
+Asara's "demographic" is split here into two dimensions — `age_band` and `sex` — because
+the physiology tables index them separately (Tanaka needs age; the resting-HR chart needs
+age x sex), so a fused token like "adult_female_middle" is unusable. (PROJECT_STATUS 4-(3))
 
 Design decision — profile "defined upfront" vs "LLM-derived from the dataset" -> HYBRID:
   * The SPINE below is DEFINED UPFRONT. It is the small set of physiology-grounded
@@ -41,10 +44,20 @@ class ProfileDimension:
 # subject-level (cohort descriptor) dimensions first, then the episode-level ones.
 CONTEXT_PROFILE: list[ProfileDimension] = [
     ProfileDimension(
-        "demographic", "subject", "categorical",
-        "Coarse demographic identity used to index physiological norms: age band and "
-        "biological sex. Values should name age brackets and sex categories.",
+        "age_band", "subject", "categorical",
+        "Coarse age bracket used to index physiological norms (max-HR via Tanaka, and "
+        "the age-related decline of resting HR / HRV). Use EXACTLY these value tokens "
+        "(and no others): under_18, 18_29, 30_39, 40_49, 50_59, 60_plus, unknown. Name "
+        "age brackets ONLY — sex is a separate dimension; do NOT fold sex into a value. "
+        "Put the rich content in each value's aliases and physio_note.",
         "predicted_from_HR (age via Tanaka HRmax) OR user_provided"),
+    ProfileDimension(
+        "sex", "subject", "categorical",
+        "Biological sex used to index resting-HR / HRV reference tables, which differ "
+        "for male vs female. Use EXACTLY these value tokens (and no others): male, "
+        "female, unknown. Name sex categories ONLY — do NOT fold age in; age is its own "
+        "dimension. Put the rich content in each value's aliases and physio_note.",
+        "user_provided (optional)"),
     ProfileDimension(
         "heart_health", "subject", "categorical",
         "Cardiovascular fitness / cardiac-risk standing inferred from resting HR, HR "

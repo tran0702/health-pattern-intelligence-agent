@@ -1,0 +1,73 @@
+{
+  "roles": {
+    "roles": [
+      {
+        "column": "timestamp",
+        "role": "timestamp",
+        "confidence": 1.0
+      },
+      {
+        "column": "heart_rate",
+        "role": "heart_rate",
+        "confidence": 1.0
+      },
+      {
+        "column": "subject_id",
+        "role": "subject_id",
+        "confidence": 1.0
+      },
+      {
+        "column": "workout_type",
+        "role": "workout_type",
+        "confidence": 1.0
+      }
+    ],
+    "source": "llm"
+  },
+  "fingerprint": {
+    "n_records": 356862,
+    "n_subjects": 1,
+    "span_days": 1761.1,
+    "records_per_day": 202.6,
+    "hr_median": 86.0,
+    "hr_p10": 74.0,
+    "hr_p90": 104.0,
+    "hr_p99": 120.0,
+    "workout_fraction": 0.023,
+    "workout_type_hist": {
+      "Walking": 5887,
+      "Rowing": 1785,
+      "Cycling": 500,
+      "Running": 94,
+      "Hiking": 17
+    },
+    "has_diagnosis": false,
+    "has_medication": false,
+    "subject_variance": {
+      "n_subjects": 1,
+      "inter_subject_resting_median": 74.0,
+      "inter_subject_resting_iqr": null,
+      "intra_subject_daily_std_median": 5.6,
+      "interpretation": "single subject — inter-subject spread is not meaningful; day-to-day std reflects this person's own volatility"
+    },
+    "missingness": {
+      "night_coverage": 0.271,
+      "day_coverage": 1.0,
+      "night_to_day_ratio": 0.271,
+      "night_missing_heavy": true,
+      "longest_gap_days": 1.94
+    },
+    "notes": "roles source=llm"
+  },
+  "global_context": {
+    "dataset_domain": "consumer_wearable",
+    "population_descriptor": "single individual",
+    "dominant_activities": [
+      "low_impact_steady",
+      "steady_state_cardio"
+    ],
+    "evidence": "n_records: 356862, span_days: 1761.1, workout_fraction: 0.023, night_missing_heavy: true",
+    "confidence": 0.85,
+    "source": "llm"
+  }
+}

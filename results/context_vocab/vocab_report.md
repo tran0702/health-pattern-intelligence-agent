@@ -2,21 +2,27 @@
 
 - source: **llm**  
 - model: `gemini-3.1-flash-lite`  
-- dimensions: 10, terms: 70
+- dimensions: 11, terms: 71
 
-## demographic  (subject/categorical)  — llm
+## age_band  (subject/categorical)  — llm
 
 | value | aliases | physio_note |
 |---|---|---|
-| `unknown` | not_provided, missing, unspecified | Baseline physiological norms cannot be determined without demographic context. |
-| `child_female` | girl, female_pediatric | Higher resting heart rate and lower HRV compared to adults due to autonomic maturation. |
-| `child_male` | boy, male_pediatric | Higher resting heart rate and lower HRV compared to adults due to autonomic maturation. |
-| `adult_female_young` | woman_18_35, female_young_adult | Higher resting heart rate than males; HRV influenced by menstrual cycle phases. |
-| `adult_male_young` | man_18_35, male_young_adult | Lower resting heart rate and higher stroke volume compared to females. |
-| `adult_female_middle` | woman_36_55, female_middle_aged | HRV may show increased variability or decline during perimenopause. |
-| `adult_male_middle` | man_36_55, male_middle_aged | Gradual decline in maximum heart rate and HRV typically observed. |
-| `adult_female_senior` | woman_55_plus, female_elderly | Lower resting heart rate and reduced HRV complexity due to age-related autonomic changes. |
-| `adult_male_senior` | man_55_plus, male_elderly | Lower resting heart rate and reduced HRV complexity due to age-related autonomic changes. |
+| `under_18` | pediatric, minor, child, adolescent | Higher resting heart rate and greater HRV variability compared to adults due to developmental autonomic maturation. |
+| `18_29` | young_adult, early_adulthood | Baseline period for peak physiological performance; HRV is typically at its lifetime maximum. |
+| `30_39` | early_thirties, late_thirties | Onset of gradual decline in maximal heart rate and subtle reduction in parasympathetic tone. |
+| `40_49` | middle_age, forties | Increased prevalence of age-related cardiovascular stiffening which begins to influence HRV recovery metrics. |
+| `50_59` | late_middle_age, fifties | Significant reduction in maximal heart rate; resting heart rate may stabilize but HRV complexity often decreases. |
+| `60_plus` | senior, elderly, geriatric | Lowered maximal heart rate and reduced autonomic responsiveness; HRV values are generally lower and less dynamic. |
+| `unknown` | not_provided, missing, unspecified | Default state; requires population-average baseline assumptions which may lack precision. |
+
+## sex  (subject/categorical)  — llm
+
+| value | aliases | physio_note |
+|---|---|---|
+| `male` | man, masculine, biological male | Generally associated with lower resting heart rates and slightly different autonomic nervous system baseline profiles compared to females. |
+| `female` | woman, feminine, biological female | Generally associated with higher resting heart rates and distinct HRV fluctuations influenced by hormonal cycles. |
+| `unknown` | not_specified, missing, unassigned | Indicates absence of biological sex data, requiring the use of population-averaged reference values for heart rate and HRV metrics. |
 
 ## heart_health  (subject/categorical)  — llm
 

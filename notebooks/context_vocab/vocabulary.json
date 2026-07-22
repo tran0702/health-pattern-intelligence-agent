@@ -2,10 +2,11 @@
   "meta": {
     "source": "llm",
     "model": "gemini-3.1-flash-lite",
-    "n_dimensions": 10,
-    "n_terms": 70,
+    "n_dimensions": 11,
+    "n_terms": 71,
     "per_dimension_source": {
-      "demographic": "llm",
+      "age_band": "llm",
+      "sex": "llm",
       "heart_health": "llm",
       "medical_conditions": "llm",
       "occupation": "llm",
@@ -18,9 +19,60 @@
     }
   },
   "dimensions": {
-    "demographic": {
-      "dimension": "demographic",
+    "age_band": {
+      "dimension": "age_band",
       "terms": [
+        {
+          "value": "under_18",
+          "aliases": [
+            "pediatric",
+            "minor",
+            "child",
+            "adolescent"
+          ],
+          "physio_note": "Higher resting heart rate and greater HRV variability compared to adults due to developmental autonomic maturation."
+        },
+        {
+          "value": "18_29",
+          "aliases": [
+            "young_adult",
+            "early_adulthood"
+          ],
+          "physio_note": "Baseline period for peak physiological performance; HRV is typically at its lifetime maximum."
+        },
+        {
+          "value": "30_39",
+          "aliases": [
+            "early_thirties",
+            "late_thirties"
+          ],
+          "physio_note": "Onset of gradual decline in maximal heart rate and subtle reduction in parasympathetic tone."
+        },
+        {
+          "value": "40_49",
+          "aliases": [
+            "middle_age",
+            "forties"
+          ],
+          "physio_note": "Increased prevalence of age-related cardiovascular stiffening which begins to influence HRV recovery metrics."
+        },
+        {
+          "value": "50_59",
+          "aliases": [
+            "late_middle_age",
+            "fifties"
+          ],
+          "physio_note": "Significant reduction in maximal heart rate; resting heart rate may stabilize but HRV complexity often decreases."
+        },
+        {
+          "value": "60_plus",
+          "aliases": [
+            "senior",
+            "elderly",
+            "geriatric"
+          ],
+          "physio_note": "Lowered maximal heart rate and reduced autonomic responsiveness; HRV values are generally lower and less dynamic."
+        },
         {
           "value": "unknown",
           "aliases": [
@@ -28,71 +80,39 @@
             "missing",
             "unspecified"
           ],
-          "physio_note": "Baseline physiological norms cannot be determined without demographic context."
+          "physio_note": "Default state; requires population-average baseline assumptions which may lack precision."
+        }
+      ]
+    },
+    "sex": {
+      "dimension": "sex",
+      "terms": [
+        {
+          "value": "male",
+          "aliases": [
+            "man",
+            "masculine",
+            "biological male"
+          ],
+          "physio_note": "Generally associated with lower resting heart rates and slightly different autonomic nervous system baseline profiles compared to females."
         },
         {
-          "value": "child_female",
+          "value": "female",
           "aliases": [
-            "girl",
-            "female_pediatric"
+            "woman",
+            "feminine",
+            "biological female"
           ],
-          "physio_note": "Higher resting heart rate and lower HRV compared to adults due to autonomic maturation."
+          "physio_note": "Generally associated with higher resting heart rates and distinct HRV fluctuations influenced by hormonal cycles."
         },
         {
-          "value": "child_male",
+          "value": "unknown",
           "aliases": [
-            "boy",
-            "male_pediatric"
+            "not_specified",
+            "missing",
+            "unassigned"
           ],
-          "physio_note": "Higher resting heart rate and lower HRV compared to adults due to autonomic maturation."
-        },
-        {
-          "value": "adult_female_young",
-          "aliases": [
-            "woman_18_35",
-            "female_young_adult"
-          ],
-          "physio_note": "Higher resting heart rate than males; HRV influenced by menstrual cycle phases."
-        },
-        {
-          "value": "adult_male_young",
-          "aliases": [
-            "man_18_35",
-            "male_young_adult"
-          ],
-          "physio_note": "Lower resting heart rate and higher stroke volume compared to females."
-        },
-        {
-          "value": "adult_female_middle",
-          "aliases": [
-            "woman_36_55",
-            "female_middle_aged"
-          ],
-          "physio_note": "HRV may show increased variability or decline during perimenopause."
-        },
-        {
-          "value": "adult_male_middle",
-          "aliases": [
-            "man_36_55",
-            "male_middle_aged"
-          ],
-          "physio_note": "Gradual decline in maximum heart rate and HRV typically observed."
-        },
-        {
-          "value": "adult_female_senior",
-          "aliases": [
-            "woman_55_plus",
-            "female_elderly"
-          ],
-          "physio_note": "Lower resting heart rate and reduced HRV complexity due to age-related autonomic changes."
-        },
-        {
-          "value": "adult_male_senior",
-          "aliases": [
-            "man_55_plus",
-            "male_elderly"
-          ],
-          "physio_note": "Lower resting heart rate and reduced HRV complexity due to age-related autonomic changes."
+          "physio_note": "Indicates absence of biological sex data, requiring the use of population-averaged reference values for heart rate and HRV metrics."
         }
       ]
     },

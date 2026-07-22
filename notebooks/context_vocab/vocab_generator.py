@@ -71,16 +71,19 @@ def _t(value, aliases, note):
 
 
 _SEED: dict[str, list[dict]] = {
-    "demographic": [
-        _t("age_under_18", ["teen", "adolescent"], "Higher HRmax (~200+), higher resting."),
-        _t("age_18_29", ["twenties", "young adult"], "HRmax ~185-190; wide resting band."),
-        _t("age_30_39", ["thirties"], "HRmax ~180; resting norms tighten."),
-        _t("age_40_49", ["forties"], "HRmax ~175; gradual HRV decline."),
-        _t("age_50_59", ["fifties"], "HRmax ~168; lower peaks expected."),
-        _t("age_60_plus", ["senior", "elderly"], "HRmax ~165 and below; reduced reserve."),
+    "age_band": [
+        _t("under_18", ["teen", "adolescent", "child"], "Higher HRmax (~200+), higher resting."),
+        _t("18_29", ["twenties", "young adult"], "HRmax ~185-190; wide resting band."),
+        _t("30_39", ["thirties"], "HRmax ~180; resting norms tighten."),
+        _t("40_49", ["forties"], "HRmax ~175; gradual HRV decline."),
+        _t("50_59", ["fifties"], "HRmax ~168; lower peaks expected."),
+        _t("60_plus", ["senior", "elderly", "60+"], "HRmax ~165 and below; reduced reserve."),
+        _t("unknown", ["na", "unspecified"], "Missing -> widen the reference band."),
+    ],
+    "sex": [
         _t("male", ["man", "m"], "Slightly lower resting-HR/HRV reference than female."),
         _t("female", ["woman", "f"], "Slightly higher resting-HR reference than male."),
-        _t("unknown", ["na", "unspecified"], "Missing -> widen the reference band."),
+        _t("unknown", ["na", "unspecified"], "Missing -> pool the male+female reference."),
     ],
     "heart_health": [
         _t("athletic", ["very fit", "endurance-trained"], "Athletic bradycardia; resting 40-58."),

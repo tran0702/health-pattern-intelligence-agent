@@ -74,7 +74,7 @@ if TG_AVAILABLE:
         the structure is reconstructed via the inner product of the embedding in
         the loss. GCN is chosen over GAT/SAGE for this homogeneous, curated,
         single-subject graph (symmetric normalisation, few params, unsupervised
-        reconstruction) - see context_baseline_design.md, Task 3."""
+        reconstruction)."""
 
         def __init__(self, in_dim: int, hid: int = 64, emb: int = 32):
             super().__init__()

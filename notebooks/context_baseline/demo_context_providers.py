@@ -26,13 +26,19 @@ import context_providers as cp                              # noqa: E402
 RNG = np.random.default_rng(3)
 
 
-def make_persona(age: int, resting: int, days: int = 21, workouts_per_week: int = 4):
-    """Synthetic raw HR + workout table for a person of KNOWN age/resting-HR.
+def make_persona(age: int, resting: int, days: int = 21, workouts_per_week: int = 4,
+                 hrr1: float | None = None):
+    """Synthetic raw HR + workout table for a person of KNOWN age/resting-HR/fitness.
 
-    HRmax = 208 - 0.7*age; workouts push HR toward ~0.95*HRmax so the observed
-    peak (what the provider sees) is a realistic lower bound on true max.
-    """
+    HRmax = 208 - 0.7*age; workouts push HR toward ~0.95*HRmax so the observed peak
+    is a realistic lower bound on true max. After each workout a RECOVERY TAIL decays
+    HR back toward daytime rest, dropping ~`hrr1` bpm in the first minute (fitter ->
+    faster). That tail is what predict_fitness_from_exertion measures, so persona
+    fitness is recoverable from EXERTION alone — not from the resting HR. `hrr1`
+    defaults to a value tied to resting HR when not given."""
     hrmax = 208 - 0.7 * age
+    if hrr1 is None:
+        hrr1 = float(np.clip(0.6 * (80 - resting), 8, 40))
     rows, wk = [], []
     t0 = pd.Timestamp("2026-01-01 00:00")
     for d in range(days):
@@ -49,19 +55,28 @@ def make_persona(age: int, resting: int, days: int = 21, workouts_per_week: int 
             wstart = t0 + pd.Timedelta(days=d, hours=18)
             wend = wstart + pd.Timedelta(minutes=40)
             wk.append(("Running", wstart, wend, 40.0, np.nan))
-            for minute in range(0, 40, 5):             # overwrite HR in the workout window
+            w_peak = 0.0
+            for minute in range(0, 40, 5):             # HR inside the workout window
                 ts = wstart + pd.Timedelta(minutes=minute)
-                peak_frac = RNG.uniform(0.88, 0.97)
-                rows.append((ts, peak_frac * hrmax + RNG.normal(0, 3)))
+                hr = RNG.uniform(0.88, 0.97) * hrmax + RNG.normal(0, 3)
+                w_peak = max(w_peak, hr)
+                rows.append((ts, hr))
+            base = resting + 8                          # recovery tail -> daytime rest
+            total = max(w_peak - base, hrr1 + 1.0)      # ensure drop(60s) < total drop
+            tau = -60.0 / np.log(1.0 - hrr1 / total)    # calibrate so drop(60s) == hrr1
+            for sec in (15, 30, 45, 60, 90, 120, 180, 240, 300):
+                hr = w_peak - total * (1.0 - np.exp(-sec / tau)) + RNG.normal(0, 1.5)
+                rows.append((wend + pd.Timedelta(seconds=sec), hr))
     hr_raw = pd.DataFrame(rows, columns=["datetime", "value"]).sort_values("datetime")
     workouts = pd.DataFrame(wk, columns=["type", "start_time", "end_time", "duration", "distance"])
     return {"hr_raw": hr_raw.reset_index(drop=True), "workouts": workouts}
 
 
-def run_persona(label, age, resting, **kw):
+def run_persona(label, age, resting, exp_fit="", **kw):
     frames = make_persona(age, resting, **kw)
     ce = cp.build_subject_context(frames, user={"goal": "endurance"})
-    print(f"\n### {label}  (TRUTH: age={age}, resting~{resting})")
+    truth = f"age={age}, resting~{resting}" + (f", fitness={exp_fit}" if exp_fit else "")
+    print(f"\n### {label}  (TRUTH: {truth})")
     print(ce.report())
     return ce
 
@@ -70,9 +85,14 @@ def main():
     print("=" * 80)
     print("TASK 1 PROVIDERS — recover context from HR alone (personas)")
     print("=" * 80)
-    run_persona("Young athlete", age=24, resting=46, workouts_per_week=5)
-    run_persona("Recreational adult", age=35, resting=62, workouts_per_week=3)
-    run_persona("Older sedentary", age=57, resting=74, workouts_per_week=1)
+    # fitness is now recovered from EXERTION (HRR + volume), so each persona carries a
+    # recovery speed (hrr1) matching its intended fitness — not just a resting HR.
+    run_persona("Young athlete", age=24, resting=46, workouts_per_week=5,
+                hrr1=34, exp_fit="athlete")
+    run_persona("Recreational adult", age=35, resting=62, workouts_per_week=3,
+                hrr1=16, exp_fit="recreational")
+    run_persona("Older sedentary", age=57, resting=74, workouts_per_week=1,
+                hrr1=9, exp_fit="sedentary")
 
     # --- graceful degradation: no workouts, then no data at all ---
     print("\n" + "=" * 80)

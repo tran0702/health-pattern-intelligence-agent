@@ -123,7 +123,7 @@ def population_default_baseline(ctx: SubjectContext) -> NormativeBaseline:
                  f"(light 30-50%, vigorous 60-85%); SDNN band by age='{ctx.age_band}'.")
     caveats = ("Population reference for anomaly detection, not diagnosis. "
                "Wearable HRV averaging differs from clinical 5-min SDNN. "
-               f"Known cohort fields: {sum(ctx.availability().values())}/6 "
+               f"Known cohort fields: {sum(ctx.availability().values())}/{len(ctx.availability())} "
                "→ wider bands when unknown.")
     return NormativeBaseline(
         resting_hr=resting, sleep_hr=sleep, light_activity_hr=light,

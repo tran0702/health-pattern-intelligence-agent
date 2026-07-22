@@ -9,8 +9,11 @@ receives it".
 
 Subject-level providers (predict the cohort descriptor from HR / weather):
   * predict_age_band      — invert Tanaka HRmax from observed peak HR.
-  * predict_fitness_level — resting-HR percentile classified through the age/sex
-    Resting-HR Chart (Athlete..Poor), collapsed to the 4-level FitnessLevel vocab.
+  * predict_fitness_from_exertion — the LIVE fitness predictor: HR recovery (HRR60)
+    + training volume + exertion peak, all INDEPENDENT of resting HR, so the band is
+    not judged by the same signal that set it (circularity fix, PROJECT_STATUS 4-(1)).
+  * predict_fitness_level — the older resting-HR chart classifier, kept REPORT-ONLY
+    and printed beside the exertion label to expose the gap; never feeds the band.
   * predict_home_climate  — from the weather distribution (temp + humidity),
     grounded in the geocoded home place name when the location_context track has run.
 Episode-level context (activity / location_type) is already derived in File 2 /
@@ -222,12 +225,135 @@ def _chart_category(rhr: float, bounds: tuple) -> str:
     return "poor"
 
 
+# --------------------------------------------------------------------------- #
+# Exertion-based fitness (the CIRCULARITY fix — PROJECT_STATUS.md 4-(1)).
+# Resting HR must not both SET the fitness band and be JUDGED by it. These signals
+# come from workouts/recovery only; none of them read _resting_hr().
+# --------------------------------------------------------------------------- #
+_HRR_GATE = 130.0        # in-workout peak (bpm) a session must reach before its
+                         # recovery is meaningful — a ~100-bpm walk has nothing to
+                         # recover from. Absolute, so it needs no (circular) age.
+
+
+def _nearest_after(t: pd.Series, v: pd.Series, e, target_s: float,
+                   tol_s: float = 20.0) -> float | None:
+    """HR value of the reading closest to `e + target_s` seconds, within +/- tol_s;
+    None if no reading lands in that window."""
+    lo = e + pd.Timedelta(seconds=target_s - tol_s)
+    hi = e + pd.Timedelta(seconds=target_s + tol_s)
+    m = (t >= lo) & (t <= hi)
+    if not m.any():
+        return None
+    idx = (t[m] - (e + pd.Timedelta(seconds=target_s))).abs().idxmin()
+    return float(v.loc[idx])
+
+
+def _hrr60(frames: dict) -> tuple[float | None, int, str]:
+    """Median 1-minute heart-rate recovery over *qualifying* workouts.
+
+    HRR60 = (in-workout peak HR) - (HR ~60 s after workout end). A large, fast drop
+    is a classic fitness marker and is independent of the absolute resting HR. Only
+    workouts whose in-workout peak clears _HRR_GATE count, so low-intensity walks do
+    not dilute the estimate. Returns (median_hrr, n_qualifying, note)."""
+    wk, hr = frames.get("workouts"), frames.get("hr_raw")
+    if wk is None or hr is None or "datetime" not in getattr(hr, "columns", []):
+        return None, 0, "no workouts+raw HR for recovery"
+    wk = wk.dropna(subset=["start_time", "end_time"])
+    if len(wk) == 0:
+        return None, 0, "no dated workouts"
+    t = hr["datetime"]
+    v = pd.to_numeric(hr["value"], errors="coerce")
+    hrrs = []
+    for s, e in zip(wk["start_time"], wk["end_time"]):
+        inw = (t >= s) & (t <= e)
+        if int(inw.sum()) < 3:
+            continue
+        peak = float(v[inw].max())
+        if peak < _HRR_GATE:                      # gate: must have really exerted
+            continue
+        hr60 = _nearest_after(t, v, e, 60.0)
+        if hr60 is None:
+            continue
+        hrrs.append(peak - hr60)
+    if not hrrs:
+        return None, 0, f"no workout reached peak>={_HRR_GATE:.0f} bpm with a +60s sample"
+    med = float(np.median(hrrs))
+    return med, len(hrrs), f"HRR60~{med:.0f}bpm/{len(hrrs)} exertion workouts"
+
+
+def _workout_load(frames: dict) -> tuple[float, float, str]:
+    """(sessions_per_week, active_min_per_week, note) from the workouts table — a
+    training-habit signal, also independent of resting HR. (0,0,..) if absent."""
+    wk = frames.get("workouts")
+    if wk is None or "start_time" not in getattr(wk, "columns", []):
+        return 0.0, 0.0, "no workouts table"
+    w = wk.dropna(subset=["start_time", "end_time"])
+    if len(w) < 2:
+        return 0.0, 0.0, "too few workouts for a rate"
+    span_days = (w["end_time"].max() - w["start_time"].min()).total_seconds() / 86400
+    weeks = max(span_days / 7.0, 1.0)
+    spw = len(w) / weeks
+    dur = pd.to_numeric(w.get("duration", pd.Series(dtype=float)), errors="coerce").dropna()
+    mpw = float(dur.sum() / weeks) if len(dur) else float("nan")
+    mnote = f", ~{mpw:.0f}min/wk" if mpw == mpw else ""
+    return spw, mpw, f"{spw:.1f} sessions/wk{mnote}"
+
+
+# HRR60 (bpm) -> fitness level (clinical 1-min recovery bands: <12 abnormal).
+def _hrr_to_level(hrr: float) -> str:
+    return ("athlete" if hrr >= 30 else "trained" if hrr >= 20
+            else "recreational" if hrr >= 12 else "sedentary")
+
+
+_LEVEL_ORDER = {"sedentary": 0, "recreational": 1, "trained": 2, "athlete": 3}
+_ORDER_LEVEL = {n: lv for lv, n in _LEVEL_ORDER.items()}
+
+
+def _volume_ceiling(spw: float) -> str:
+    """Highest fitness level a given weekly session frequency can justify: good
+    recovery + rare training is 'recreational', not 'athlete'."""
+    return ("athlete" if spw >= 4 else "trained" if spw >= 3
+            else "recreational" if spw >= 1 else "sedentary")
+
+
+def predict_fitness_from_exertion(frames: dict, age_band: str = "unknown",
+                                  sex: str = "unknown") -> FieldEstimate:
+    """Classify fitness from EXERTION, never from resting HR (the circularity fix,
+    PROJECT_STATUS.md 4-(1)). Independent signals:
+      * HRR60  - 1-min recovery after real-effort workouts (cardiovascular capacity),
+      * volume - sessions/week + active min/week (training habit),
+      * peak   - whether the subject ever elevates HR at all (via _peak_hr).
+    HRR sets the level; training volume caps it; a subject who never reaches an
+    exertion peak floors at 'sedentary'. age_band/sex are accepted only for
+    signature parity with the chart predictor - HRR needs neither."""
+    hrr, n_qual, hnote = _hrr60(frames)
+    spw, _mpw, vnote = _workout_load(frames)
+    peak, _npk, pnote, from_wk = _peak_hr(frames)
+
+    if hrr is None and not (from_wk and peak is not None) and spw == 0:
+        return FieldEstimate("unknown", 0.0, f"no exertion signal ({hnote}; {vnote})")
+
+    if hrr is None:                               # trains but never truly exerts
+        conf = round(0.30 + 0.20 * min(1.0, spw / 3.0), 2)
+        return FieldEstimate("sedentary", conf,
+                             f"never reached peak>={_HRR_GATE:.0f}bpm; {vnote}; {pnote}")
+
+    level = _hrr_to_level(hrr)
+    capped = _ORDER_LEVEL[min(_LEVEL_ORDER[level], _LEVEL_ORDER[_volume_ceiling(spw)])]
+    conf = round(0.30 + 0.50 * min(1.0, n_qual / 20.0), 2)
+    cap = "" if capped == level else f"; volume-capped {level}->{capped}"
+    return FieldEstimate(capped, conf, f"{hnote}; {vnote}{cap}")
+
+
 def predict_fitness_level(frames: dict, age_band: str = "unknown",
                           sex: str = "unknown") -> FieldEstimate:
-    """Classify fitness from resting HR via the age/sex Resting-HR Chart.
-    age_band + sex index the chart (they come from the resolved SubjectContext);
-    if either is unknown the chart is pooled over that dimension. Output stays in
-    the 4-level FitnessLevel vocab; the exact 7-level chart category is reported."""
+    """RESTING-BASED fitness — REPORT ONLY, must NOT feed the band (it is the source
+    of the circularity: resting HR would both set and be judged by the band). Kept so
+    build_subject_context can print it beside the exertion label to expose the gap.
+    Classifies resting HR via the age/sex Resting-HR Chart; age_band + sex index the
+    chart (pooled if unknown). Output in the 4-level FitnessLevel vocab; the exact
+    7-level chart category is reported. Live band prediction uses
+    predict_fitness_from_exertion instead."""
     rhr, n, how = _resting_hr(frames)
     if rhr is None:
         return FieldEstimate("unknown", 0.0, f"no resting-HR signal ({how})")
@@ -277,7 +403,7 @@ def predict_home_climate(frames: dict) -> FieldEstimate:
 # --------------------------------------------------------------------------- #
 _PREDICTORS = {
     "age_band": predict_age_band,
-    "fitness_level": predict_fitness_level,
+    "fitness_level": predict_fitness_from_exertion,   # exertion, not resting HR (4-(1))
     "home_climate": predict_home_climate,
 }
 # fields only a person can supply (no data predictor) — accepted via `user`
@@ -312,6 +438,14 @@ def build_subject_context(frames: dict, user: dict | None = None,
             e = FieldEstimate("unknown", e.confidence, e.evidence + " -> below min_conf")
         est[f] = e
         values[f] = e.value
+
+    # report-only: the RESTING-based fitness label, shown BESIDE the exertion one so
+    # the circularity it used to cause stays visible but never feeds the band (4-(1)).
+    if "hr_raw" in frames or "hr_features" in frames:
+        rf = predict_fitness_level(frames, age_band=values.get("age_band", "unknown"),
+                                   sex=user.get("sex", "unknown"))
+        est["fitness_resting_report"] = FieldEstimate(
+            rf.value, rf.confidence, "REPORT-ONLY (not used for band) - " + rf.evidence)
 
     for f in _USER_ONLY:
         if f in user and user[f] not in (None, "unknown"):
