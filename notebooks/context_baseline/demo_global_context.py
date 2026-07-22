@@ -28,6 +28,7 @@ except Exception:
     pass
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import context_providers as cp                                 # noqa: E402
 import global_context as gx                                    # noqa: E402
 from demo_context_providers import make_persona                # noqa: E402
 
@@ -148,11 +149,60 @@ def main() -> int:
         print(f"  fingerprint  : n_subj={fp['n_subjects']} span={fp['span_days']}d "
               f"hr_median={fp['hr_median']} intra_std="
               f"{fp['subject_variance']['intra_subject_daily_std_median']}")
+        prior_real = gx.global_prior_from_context(bundle["global_context"])
+        print(f"  global prior : {prior_real or '{}  (domain implies no individual tier -> no guess)'}")
         print(f"  saved -> results/context_baseline/global_context.json")
     else:
         print("  (no data/processed/*.parquet — skipped real-subject checks)")
 
-    print("\n" + ("PASS — global context recovers known cohorts + flags missingness."
+    # 5) STEP 6 — the individual layer falls back on the confidence-gated global prior.
+    print("\n--- 5. global prior -> individual fallback (step 6) ---")
+    prior_specs = [
+        ("athletic", ATHLETIC, dict(age=25, resting=48, workouts_per_week=6, hrr1=34),
+         "elite_athletic", True),
+        ("cardiac", CARDIAC, dict(age=62, resting=82, workouts_per_week=1, hrr1=8),
+         "at_risk", True),
+        ("office", OFFICE, dict(age=40, resting=72, workouts_per_week=1, hrr1=12),
+         "unknown", False),      # general_population rule conf 0.45 < gate -> rejected
+    ]
+    prior_ath = None
+    for label, spec, pp, want_hh, want_applied in prior_specs:
+        _, _fp, gc = _classify(make_cohort(spec), "default")
+        prior = gx.global_prior_from_context(gc)
+        if label == "athletic":
+            prior_ath = prior
+        ce = cp.build_subject_context(make_persona(**pp), global_prior=prior)
+        hh = ce.estimates["heart_health"]
+        applied = hh.value != "unknown"
+        hit = (hh.value == want_hh) and (applied == want_applied)
+        ok &= hit
+        gate = "conf>=0.50" if gc.confidence >= 0.5 else "conf<0.50 -> gated"
+        print(f"  [{'ok' if hit else 'XX'}] {label:9s} domain={gc.dataset_domain:20s} "
+              f"({gc.confidence:.2f}, {gate}) -> heart_health={hh.value} "
+              f"[{'prior applied' if applied else 'no prior (unknown)'}]")
+
+    # the fitness prior fills ONLY when the individual exertion signal is absent;
+    # a real signal keeps its own label, and a user value beats the prior outright.
+    ath = make_persona(age=25, resting=48, workouts_per_week=6, hrr1=34)
+    ce_full = cp.build_subject_context(ath, global_prior=prior_ath)
+    ce_nowk = cp.build_subject_context({"hr_raw": ath["hr_raw"]}, global_prior=prior_ath)
+    ce_user = cp.build_subject_context(
+        ath, user={"heart_health": "average_sedentary"}, global_prior=prior_ath)
+    f_full, f_nowk = ce_full.estimates["fitness_level"], ce_nowk.estimates["fitness_level"]
+    hh_user = ce_user.estimates["heart_health"]
+    full_is_indiv = not f_full.evidence.startswith("from ")
+    nowk_is_prior = f_nowk.evidence.startswith("from ") and f_nowk.value == "trained"
+    user_wins = hh_user.evidence.startswith("user-provided") and hh_user.value == "average_sedentary"
+    ok &= full_is_indiv and nowk_is_prior and user_wins
+    print(f"  [{'ok' if full_is_indiv else 'XX'}] athletic w/ workouts : "
+          f"fitness={f_full.value} [{'individual' if full_is_indiv else 'prior'}] (prior not applied)")
+    print(f"  [{'ok' if nowk_is_prior else 'XX'}] athletic w/o workouts: "
+          f"fitness={f_nowk.value} [{'prior' if f_nowk.evidence.startswith('from ') else 'individual'}]")
+    print(f"  [{'ok' if user_wins else 'XX'}] user override        : "
+          f"heart_health={hh_user.value} [user] (prior said elite_athletic)")
+
+    print("\n" + ("PASS — global context recovers known cohorts, flags missingness, "
+                  "and feeds a confidence-gated prior into the individual layer."
                   if ok else "FAIL — see [XX] above."))
     return 0 if ok else 1
 

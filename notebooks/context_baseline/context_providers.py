@@ -22,7 +22,11 @@ the enrichment C2 geocoder, so those are wired in, not re-implemented here.
 Every provider returns a `FieldEstimate(value, confidence, evidence)` and degrades
 to ('unknown', 0.0, why) when its inputs are missing — the library stays robust to
 partial data. `build_subject_context` fuses them with any user-provided overrides
-(user value always wins) into a `SubjectContext`.
+and an optional Task-2 GLOBAL prior into a `SubjectContext`, with precedence
+user > individual signal > confidence-gated global prior > 'unknown' (step 6,
+PROJECT_STATUS 4-(2)). The prior is a plain dict from
+global_context.global_prior_from_context, so this module needs no import of the
+global track (one-way, artifact-style wiring).
 
 Runs on real data/processed/*.parquet when present; otherwise callers pass frames
 directly (see demo_context_providers.py for synthetic-persona validation).
@@ -69,8 +73,13 @@ class ContextEstimation:
     def report(self) -> str:
         lines = []
         for k, e in self.estimates.items():
-            src = "user" if e.evidence.startswith("user-provided") else "predicted"
-            lines.append(f"  {k:18s} = {e.value:<12} conf={e.confidence:.2f}  [{src}] {e.evidence}")
+            if e.evidence.startswith("user-provided"):
+                src = "user"
+            elif e.evidence.startswith("from "):     # confidence-gated global prior
+                src = "prior"
+            else:
+                src = "predicted"
+            lines.append(f"  {k:22s} = {e.value:<16} conf={e.confidence:.2f}  [{src}] {e.evidence}")
         return "\n".join(lines)
 
 
@@ -406,21 +415,56 @@ _PREDICTORS = {
     "fitness_level": predict_fitness_from_exertion,   # exertion, not resting HR (4-(1))
     "home_climate": predict_home_climate,
 }
-# fields only a person can supply (no data predictor) — accepted via `user`
-_USER_ONLY = ("sex", "health_conditions", "goal")
+# fields with no data predictor yet — resolved from `user`, or (for the subset a
+# dataset domain can defensibly inform, i.e. heart_health) a confidence-gated GLOBAL
+# prior. health_conditions is intentionally NOT prior-eligible (see _PRIOR_FIELDS).
+_USER_OR_PRIOR = ("sex", "health_conditions", "goal", "occupation", "sleep", "heart_health")
+# fields a Task-2 GLOBAL prior may fall back on when the individual signal is unknown
+# (values come from global_context.global_prior_from_context). Kept small + medically
+# defensible: a population tier the dataset domain genuinely implies.
+_PRIOR_FIELDS = ("fitness_level", "heart_health")
+# a population prior is discounted vs a direct individual signal when its confidence
+# is reported, so it can never masquerade as individual evidence.
+_PRIOR_DISCOUNT = 0.7
 
 
 def build_subject_context(frames: dict, user: dict | None = None,
-                          min_conf: float = 0.25) -> ContextEstimation:
-    """Fuse data-predicted fields with user overrides into a SubjectContext.
+                          global_prior: dict | None = None,
+                          min_conf: float = 0.25,
+                          min_global_conf: float = 0.5) -> ContextEstimation:
+    """Fuse data-predicted fields with user overrides (and an optional Task-2 GLOBAL
+    prior) into a SubjectContext.
 
-    * A user-supplied value always wins (source of truth) and gets confidence 1.
-    * A predicted field is accepted only if confidence >= min_conf, else 'unknown'
-      (robustness: a weak signal must not masquerade as known context).
+    Precedence per field:
+      user value (source of truth, conf 1)
+        > individual data prediction (accepted when conf >= min_conf)
+        > confidence-gated GLOBAL prior (only for _PRIOR_FIELDS, only when the
+          dataset's own classification confidence >= min_global_conf)
+        > 'unknown'.
+
+    This is step 6 of Task 2 (PROJECT_STATUS 4-(2)): the GLOBAL context (what kind of
+    dataset this is) informs the individual layer without ever overriding a real
+    individual signal or a user value. `global_prior` is a plain dict produced by
+    global_context.global_prior_from_context, so this module keeps no import of the
+    global track — one-way, artifact-style wiring. `min_global_conf` is the gate that
+    keeps a low-confidence dataset label from injecting a guess ('unknown' wins).
     """
     user = user or {}
     est: dict[str, FieldEstimate] = {}
     values: dict[str, object] = {}
+
+    def _prior_estimate(field: str) -> FieldEstimate | None:
+        """A confidence-gated global prior for `field`, or None if the dataset is not
+        confident enough (or offers no prior for this field)."""
+        if not global_prior or field not in global_prior:
+            return None
+        p = global_prior[field]
+        if float(p.get("confidence", 0.0)) < min_global_conf:
+            return None
+        conf = round(_PRIOR_DISCOUNT * float(p["confidence"]), 2)
+        return FieldEstimate(p["value"], conf,
+                             "from " + p.get("evidence", "global prior")
+                             + " (individual signal unknown)")
 
     for f, fn in _PREDICTORS.items():
         if f in user and user[f] not in (None, "unknown"):
@@ -436,6 +480,10 @@ def build_subject_context(frames: dict, user: dict | None = None,
             e = fn(frames)
         if e.confidence < min_conf:
             e = FieldEstimate("unknown", e.confidence, e.evidence + " -> below min_conf")
+        if not e.known() and f in _PRIOR_FIELDS:      # fall back on the global prior
+            pe = _prior_estimate(f)
+            if pe is not None:
+                e = pe
         est[f] = e
         values[f] = e.value
 
@@ -447,20 +495,37 @@ def build_subject_context(frames: dict, user: dict | None = None,
         est["fitness_resting_report"] = FieldEstimate(
             rf.value, rf.confidence, "REPORT-ONLY (not used for band) - " + rf.evidence)
 
-    for f in _USER_ONLY:
+    for f in _USER_OR_PRIOR:
         if f in user and user[f] not in (None, "unknown"):
             v = user[f]
             est[f] = FieldEstimate(str(v), 1.0, "user-provided")
             values[f] = v
+            continue
+        pe = _prior_estimate(f) if f in _PRIOR_FIELDS else None
+        if pe is not None:
+            est[f] = pe
+            values[f] = pe.value
         else:
             est[f] = FieldEstimate("unknown", 0.0, "not provided (no data predictor)")
+
+    # exact age (user only) — Tanaka HRmax wants a real number, not a band midpoint.
+    if user.get("age_years") is not None:
+        try:
+            values["age_years"] = float(user["age_years"])
+            est["age_years"] = FieldEstimate(str(values["age_years"]), 1.0, "user-provided")
+        except (TypeError, ValueError):
+            pass
 
     hc = values.get("health_conditions", "unknown")
     ctx = SubjectContext(
         age_band=values.get("age_band", "unknown"),
         sex=values.get("sex", "unknown"),
+        age_years=values.get("age_years"),
         fitness_level=values.get("fitness_level", "unknown"),
+        heart_health=values.get("heart_health", "unknown"),
         health_conditions=hc if isinstance(hc, list) else [hc],
+        occupation=values.get("occupation", "unknown"),
+        sleep=values.get("sleep", "unknown"),
         goal=values.get("goal", "unknown"),
         home_climate=values.get("home_climate", "unknown"),
     )

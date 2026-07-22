@@ -76,14 +76,16 @@ occupation · demographic attributes
 | # | Task | Trạng thái |
 |---|---|---|
 | **1** | LLM tự sinh context vocabulary (không gõ tay) | ✅ **XONG** — 10 chiều/70 term, **10/10 từ LLM thật**, freeze `vocabulary.json` + code-gen `generated_vocab.py` |
-| **2** | Tự phân loại 2 cấp trên dataset **bất kỳ**: **Global** (dataset nói về gì) + **Individual** (người này là ai) | ⏳ **GẦN XONG** — Individual ✅ (đã gỡ circularity §4①) · Global ✅ dựng bước 1–5 (`global_context.py`, §4②) · **còn**: bước 6 nối prior + predictor `occupation` |
+| **2** | Tự phân loại 2 cấp trên dataset **bất kỳ**: **Global** (dataset nói về gì) + **Individual** (người này là ai) | ✅ **XONG** — Individual ✅ (đã gỡ circularity §4①) · Global ✅ (`global_context.py`, §4②) · **bước 6 nối prior ✅** (`global_prior_from_context` → `build_subject_context`, confidence-gated) · (enhancement `occupation`/`sleep` predictor từ data = §4④, không chặn Task 2) |
 | **3** | Thử nghiệm mô hình Transformer cho trích xuất ngữ cảnh | ⏸ sau Task 2 |
 
 **Đã có sẵn & chạy được cho Task 2:** `build_subject_context` **tự động** gán `age_band` /
 `fitness_level` / `home_climate`; chuỗi `SubjectContext → establish_baseline →
-detect_against_baseline` (đúng cái Asara mô tả) **đã hoạt động**.
+detect_against_baseline` (đúng cái Asara mô tả) **đã hoạt động**. Từ 2026-07-22 nó còn nhận
+**global prior** (confidence-gated) từ tầng Global — hoàn tất vòng 2 cấp Asara yêu cầu.
 
-**Thiếu đúng 3 thứ:** Global Context · `occupation` · nối vocab mới vào.
+**Task 2 core ✅ đủ.** Enhancement còn để ngỏ (không chặn Task 2): predictor `occupation`/`sleep`
+suy từ data (§4④) — hiện là trường user/prior, chưa có bộ dự đoán riêng.
 
 ---
 
@@ -158,7 +160,7 @@ phục đúng athlete / recreational / sedentary từ HRR+volume (không dùng r
 > phục). Nhãn này giờ **độc lập hoàn toàn với resting HR** → đúng mục tiêu; resting-report cũng ra
 > `recreational` (p10=74 → "average"), còn narrative deconditioning là từ median~85 (§7).
 
-### ② Global Context — ✅ ĐÃ DỰNG (bước 1–5, 2026-07-22)
+### ② Global Context — ✅ XONG (bước 1–6, 2026-07-22)
 
 **✅ Đã có `notebooks/context_baseline/global_context.py`** (3 stage) + `demo_global_context.py`:
 - `infer_column_roles` LLM structured + fallback regex/dtype; **adversarial rename (tên cột tiếng Anh
@@ -171,8 +173,26 @@ phục đúng athlete / recreational / sedentary từ HRR+volume (không dùng r
   → `consumer_wearable` (LLM conf 0.85), cờ night gap bật → **không bịa context giấc ngủ**.
 - 🔒 Không gửi dòng data thô cho LLM (chỉ tên cột + dtype + stats + tập nhãn low-cardinality).
 
-**⏳ Còn lại:** bước 6 (nối `global_prior` xuống `build_subject_context` bằng luật confidence-gated) — đụng
-pipeline, để riêng. Ghi lại thiết kế gốc bên dưới.
+**✅ Bước 6 ĐÃ HIỆN THỰC (2026-07-22) — nối `global_prior` xuống individual:**
+- **`global_prior_from_context(gc)`** trong `global_context.py`: map `dataset_domain` → prior per-field,
+  confidence = confidence của chính bản phân loại dataset. Bảng `_DOMAIN_PRIOR` cố ý **nhỏ + bảo vệ được
+  y học**: `athletic_performance` → `fitness_level=trained`+`heart_health=elite_athletic`; `clinical_cardiac`/
+  `clinical_cohort` → `heart_health=at_risk`; `general_population` → `heart_health=average_sedentary`.
+  `consumer_wearable`/`sleep_study`/domain lạ → **prior rỗng** (không đoán). **KHÔNG** map `health_conditions`
+  (bịa chẩn đoán per-subject từ cờ dataset = đúng cái guardrail cấm; cohort lâm sàng vẫn có nhóm chứng).
+- **`build_subject_context(..., global_prior=None, min_global_conf=0.5)`**: thứ tự ưu tiên
+  **user > tín hiệu cá nhân (conf≥min_conf) > global prior (chỉ `_PRIOR_FIELDS`, chỉ khi dataset-conf≥
+  min_global_conf) > unknown**. Prior bị chiết khấu (`_PRIOR_DISCOUNT=0.7`) để không bao giờ giả làm bằng
+  chứng cá nhân. Không import chéo track — prior là **dict thuần** (one-way, artifact-style). Đồng thời
+  **populate các trường vocab mới** (`heart_health`/`occupation`/`sleep`/`age_years`) vào `SubjectContext`
+  (constructor trước đây bỏ sót chúng).
+- **Verify (`demo_global_context.py` §5, PASS cả offline lẫn live):** athletic → `heart_health=elite_athletic`
+  [prior applied]; cardiac → `at_risk`; office (rule conf **0.45 < 0.50**) → **gated → unknown** (không đoán bừa);
+  athletic có workout → `fitness=athlete` [individual, prior không đè]; athletic bỏ workout → `fitness=trained`
+  [prior điền]; user override → `heart_health=average_sedentary` [user thắng prior]. **Subject thật
+  (`consumer_wearable`) → prior `{}`** → tầng individual không đổi (đúng: 1 wearable đơn không suy được tier).
+
+Ghi lại thiết kế gốc bên dưới.
 
 <details><summary>Thiết kế gốc (đã hiện thực)</summary>
 
@@ -331,12 +351,15 @@ Nhánh sau **không phục vụ task nào của Asara**, phát sinh từ đề x
 Mỗi phần một demo chạy **offline** (không cần API key); chạy lần 2 phải **tái lập** nhờ cache + seed.
 - `python demo_context_providers.py` → persona có truth khôi phục đúng; **in cả fitness exertion-based
   lẫn resting-based**; thiếu dữ liệu → `unknown` không crash.
-- `demo_global_context.py` (mới) → cohort synthetic có truth 2 cấp khôi phục đúng; chạy được subject thật.
+- `demo_global_context.py` → cohort synthetic có truth 2 cấp khôi phục đúng; **§5 bước 6**: prior gated đúng
+  (athletic/cardiac applied, office conf<0.5 gated, individual/user thắng prior, subject thật → prior rỗng);
+  chạy được subject thật. PASS cả `--offline` lẫn live.
 - `python demo_vocab.py` → vocab regenerate, `age_band`/`sex`/`dataset_domain` tách đúng, Literal khớp JSON.
 
-**Thứ tự:** ①  gỡ circularity → §7 xác minh nhãn fitness → ③  tách demographic + regenerate vocab →
-②  Global Context → ④  occupation → sau đó mới **Task 3** (scope chưa chốt: text-encoder trên
-feature→text **hay** time-series Transformer — cần quyết vì đổi hẳn thiết kế).
+**Thứ tự:** ①  gỡ circularity ✅ → §7 xác minh nhãn fitness → ③  tách demographic + regenerate vocab ✅ →
+②  Global Context ✅ (**bước 1–6 xong → Task 2 hoàn tất**) → ④  occupation (enhancement) → sau đó mới
+**Task 3** (scope chưa chốt: text-encoder trên feature→text **hay** time-series Transformer — cần quyết
+vì đổi hẳn thiết kế).
 
 ---
 

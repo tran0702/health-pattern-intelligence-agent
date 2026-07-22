@@ -515,6 +515,48 @@ def classify_global_context(fp: DatasetFingerprint, source: str = "auto") -> Glo
 
 
 # --------------------------------------------------------------------------- #
+# Step 6 — the global context becomes a PRIOR the individual layer falls back on.
+# A dataset domain implies a population-level tier ONLY where that is medically
+# defensible; the prior fills an individual field just-in-case its own signal is
+# unknown, gated downstream by the dataset's classification confidence (see
+# context_providers.build_subject_context, which also enforces user-override
+# precedence). Deliberately small: heart_health is a coarse cardiac tier the domain
+# genuinely implies; fitness_level only for an explicitly athletic dataset. NOT
+# health_conditions — fabricating a per-subject diagnosis from a dataset-level flag
+# is exactly the guess the design forbids (a clinical dataset still holds controls).
+# The prior NEVER overrides a real individual signal or a user value.
+# --------------------------------------------------------------------------- #
+_DOMAIN_PRIOR: dict[str, dict[str, str]] = {
+    "athletic_performance": {"fitness_level": "trained", "heart_health": "elite_athletic"},
+    "clinical_cardiac":     {"heart_health": "at_risk"},
+    "clinical_cohort":      {"heart_health": "at_risk"},
+    "general_population":   {"heart_health": "average_sedentary"},
+    # consumer_wearable / consumer_fitness / sleep_study / novel domains -> no prior:
+    # too heterogeneous to imply an individual's tier without guessing ('unknown' wins).
+}
+
+
+def global_prior_from_context(gc: GlobalContext | dict) -> dict[str, dict]:
+    """Turn a GlobalContext into per-field priors for the individual layer (step 6).
+
+    Returns {field: {"value", "confidence", "evidence"}} for the small set of
+    SubjectContext fields a dataset domain can defensibly inform. The confidence is
+    the dataset's OWN classification confidence, so a low-confidence global label
+    yields a low-confidence prior that build_subject_context's min_global_conf gate
+    can reject. Empty when the domain implies nothing (e.g. consumer_wearable) —
+    'unknown' beats guessing. Accepts the GlobalContext object or its dict dump."""
+    if isinstance(gc, dict):
+        domain = str(gc.get("dataset_domain", "unknown"))
+        conf = float(gc.get("confidence", 0.0))
+    else:
+        domain, conf = gc.dataset_domain, float(gc.confidence)
+    mapping = _DOMAIN_PRIOR.get(domain, {})
+    ev = f"global prior (dataset_domain={domain}, conf={conf:.2f})"
+    return {f: {"value": v, "confidence": round(conf, 2), "evidence": ev}
+            for f, v in mapping.items()}
+
+
+# --------------------------------------------------------------------------- #
 # Orchestrator + Apple-Health frames -> one tidy table
 # --------------------------------------------------------------------------- #
 def apple_health_to_df(frames: dict) -> pd.DataFrame:
