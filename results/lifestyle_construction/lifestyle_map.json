@@ -51,7 +51,15 @@
     }
   },
   "subject_priors": {
-    "global_context": {
+    "age_band": "40_49",
+    "sex": "male",
+    "fitness_level": "recreational",
+    "home_climate": "temperate",
+    "occupation": "unknown",
+    "heart_health": "unknown",
+    "sleep": "unknown",
+    "health_conditions": "none",
+    "global_context_detail": {
       "roles": {
         "roles": [
           {
@@ -124,7 +132,7 @@
         "source": "llm"
       }
     },
-    "home_climate": {
+    "home_climate_detail": {
       "place": "Gamma Crescent, Panorama",
       "coord": [
         -35.00462,

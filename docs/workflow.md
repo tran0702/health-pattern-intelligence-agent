@@ -1,5 +1,11 @@
 # Apple Health Data Analysis Workflow
 
+> ⚑ **2026-07-23 pivot:** the main pipeline's File 3/4 were changed from **HR-anomaly detection**
+> to **Lifestyle Construction** (`03_lifestyle_construction.ipynb`) + **Lifestyle Report**
+> (`04_lifestyle_report.ipynb`). The old anomaly notebooks are archived in `notebooks/_archive/`.
+> The diagrams below describe the *earlier* anomaly pipeline and are kept for history only —
+> **`docs/PROJECT_STATUS.md` is the single source of truth** (see §2.1 flow and §4⑥).
+
 ## Analysis Pipeline
 
 This document describes the complete analysis workflow and dependencies between files.

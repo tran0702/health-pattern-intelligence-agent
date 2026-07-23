@@ -25,6 +25,7 @@ reuses ee_transformer patterns and the frozen Task-1 vocab via Stage A.
 """
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 
@@ -381,3 +382,43 @@ def run_stage_b(ep: pd.DataFrame, cfg: LCConfig, priors: dict | None = None) -> 
     return LifestyleResult(embeddings=emb, labels=labels, k=k, silhouette=round(float(sil), 4),
                            nodes=nodes, edges=edges, lifestyle_map=lmap, proxy=proxy,
                            feature_mode=cfg.feature_mode, extra={"aux": dt.aux})
+
+
+def run_and_save(ep: pd.DataFrame, priors: dict | None = None, epochs: int = 12,
+                 results_dir: str = RESULTS_DIR) -> dict:
+    """End-to-end Stage B for BOTH feature modes + aggregate baseline; persist the enriched
+    embeddings/KG/map + the honest proxy-eval table. Shared by L1_lifestyle.py and File 3.
+    Returns {'primary': LifestyleResult(enriched), 'eval': DataFrame, 'baseline_labels': ndarray}."""
+    os.makedirs(results_dir, exist_ok=True)
+    results = {}
+    for mode in ("enriched", "raw"):
+        res = run_stage_b(ep, LCConfig(epochs=epochs, feature_mode=mode), priors=priors)
+        base_labels = aggregate_baseline(ep, res.extra["aux"], k=res.k)
+        results[mode] = (res, base_labels, proxy_alignment(base_labels, res.extra["aux"]))
+
+    res_e, base_labels_e, base_proxy_e = results["enriched"]
+    aux = res_e.extra["aux"]
+    emb_df = pd.DataFrame(res_e.embeddings,
+                          columns=[f"e{i}" for i in range(res_e.embeddings.shape[1])])
+    emb_df.insert(0, "date", aux["date"].values)
+    emb_df["state"] = res_e.labels
+    emb_df["state_name"] = emb_df["state"].map(dict(zip(res_e.nodes["state"], res_e.nodes["name"])))
+    emb_df.to_parquet(os.path.join(results_dir, "day_embeddings.parquet"), index=False)
+    res_e.nodes.to_csv(os.path.join(results_dir, "lifestyle_kg_nodes.csv"), index=False)
+    res_e.edges.to_csv(os.path.join(results_dir, "lifestyle_kg_edges.csv"), index=False)
+    json.dump(res_e.lifestyle_map, open(os.path.join(results_dir, "lifestyle_map.json"), "w"),
+              indent=2, default=str)
+
+    eval_rows = []
+    for mode in ("enriched", "raw"):
+        res, _bl, _bp = results[mode]
+        eval_rows.append({"arm": f"transformer_{mode}", "k": res.k, "silhouette": res.silhouette,
+                          **res.proxy})
+        if mode == "enriched":
+            eval_rows.append({"arm": "aggregate_baseline", "k": res.k, "silhouette": np.nan,
+                              **base_proxy_e})
+    eval_df = pd.DataFrame(eval_rows)
+    eval_df.to_csv(os.path.join(results_dir, "l1_proxy_eval.csv"), index=False)
+    json.dump({"config_epochs": epochs, "eval": eval_rows},
+              open(os.path.join(results_dir, "l1_meta.json"), "w"), indent=2, default=str)
+    return {"primary": res_e, "eval": eval_df, "baseline_labels": base_labels_e}

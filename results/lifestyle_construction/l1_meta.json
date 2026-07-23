@@ -1,9 +1,5 @@
 {
   "config_epochs": 12,
-  "priors_loaded": [
-    "global_context",
-    "home_climate"
-  ],
   "eval": [
     {
       "arm": "transformer_enriched",

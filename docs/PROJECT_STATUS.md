@@ -1,8 +1,9 @@
 # PROJECT STATUS — Single Source of Truth
 
 > **Đây là tài liệu trạng thái DUY NHẤT của dự án.** Cập nhật **2026-07-23**.
-> Repo `tran0702/health-pattern-intelligence-agent`, HEAD `90a571d` (Task 3 đã commit+push) +
-> **track mới `lifestyle_construction/` chưa commit** (Stage A LLM-enrich + Stage B Transformer lifestyle — xem §4⑥).
+> Repo `tran0702/health-pattern-intelligence-agent`, HEAD `7fa0552` (track lifestyle đã commit+push) +
+> **File 3/4 ĐÃ PIVOT sang LIFESTYLE, chưa commit**: `03_lifestyle_construction` + `04_lifestyle_report`
+> thay hẳn HR-anomaly (user yêu cầu — giáo sư cần lifestyle); bản cũ backup ở `notebooks/_archive/` (§2.1, §4⑥).
 > Đọc file này là đủ để tiếp tục làm, không cần lịch sử hội thoại.
 >
 > Ký hiệu nguồn: ✅ **đã tự chạy đo trên dữ liệu thật** · 📄 từ tài liệu dự án (có thể cũ) ·
@@ -32,11 +33,13 @@ LLM **không** nuốt data thô, **không** phán anomaly. **Code đo → LLM đ
 export.xml
  → [File 1] 01_ingestion            → hr_raw · hr_features (window 15') · workouts
  → [File 2] 02_context_semantic     → behavioral_episodes + BKG (node/edge_table) + weather
- → [File 3] 03_baseline_gnn_anomaly
-        Part A: context baseline (LLM / physiology fallback) → standard_definitions
-        Part B: GCN-DOMINANT (autoencoder)                   → node/edge anomaly scores
- → [File 4] 04_audit_metrics        → tiêm synthetic anomaly → 2 detector độc lập → ROC/PR/F1
+ → [File 3] 03_lifestyle_construction   ⚑ ĐÃ THAY "HR-anomaly" → LIFESTYLE (2026-07-23, user yêu cầu)
+        SubjectContext (prior) → Stage A: LLM enrich episode → Stage B: Transformer tự-giám-sát
+        → day_embeddings + lifestyle states (KG) + lifestyle_map
+ → [File 4] 04_lifestyle_report     → states + weekly/seasonal rhythm + transitions + validation table
    [File 3b] cohort baseline (BIDSleep) — PENDING, chưa có data
+   (bản anomaly cũ 03_baseline_gnn_anomaly / 04_audit_metrics → backup `notebooks/_archive/`;
+    standard_definitions + GCN node/edge scores KHÔNG còn sinh ra ở main line)
 ```
 
 ### 2.2 Bốn tầng code
@@ -65,7 +68,8 @@ export.xml
 
 **Khái niệm chưa mô hình hóa:** Observer Point · stateful/multi-cycle theo epoch (hiện **stateless,
 1 lượt**) · anomalous community/ego-net. ⇒ Code phủ **nửa trên** sơ đồ; **nửa dưới (Lifestyle
-Construction/KG/map) giờ có bản đầu** ở track `lifestyle_construction/` (§4⑥), chưa nối vào File 1–4.
+Construction/KG/map) giờ là NỘI DUNG CHÍNH của File 3** (thay HR-anomaly, 2026-07-23, §4⑥) — không
+còn chỉ là track cô lập.
 
 ---
 
@@ -500,9 +504,10 @@ vì đổi hẳn thiết kế).
 
 ```
 notebooks/
-  01_ingestion…ipynb · 02_context_semantic.ipynb · 03_baseline_gnn_anomaly.ipynb
-  03b_cohort_baseline.ipynb (pending) · 04_audit_metrics.ipynb
-  graph_model.py                       # GCN-DOMINANT dùng chung File 3 & 4
+  01_ingestion…ipynb · 02_context_semantic.ipynb · 03_lifestyle_construction.ipynb (⚑ mới)
+  04_lifestyle_report.ipynb (⚑ mới) · 03b_cohort_baseline.ipynb (pending)
+  _archive/  03_baseline_gnn_anomaly.ipynb · 04_audit_metrics.ipynb  # bản anomaly cũ, backup
+  graph_model.py                       # GCN-DOMINANT — giờ KHÔNG dùng ở main line (giữ lịch sử)
   context_baseline/   context_library.py · context_providers.py · global_baseline.py
   context_vocab/      context_profile.py · vocab_generator.py · vocabulary.json · generated_vocab.py
   enrichment_experiment/ · location_context/ · lifestyle_construction/ (Stage A enrich + Stage B Transformer lifestyle, §4⑥)
