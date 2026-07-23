@@ -367,6 +367,9 @@ lifestyle_construction/`. **Chưa nối File 1–4** (nối "Step 4b" vào File 
   (masked-episode reconstruction, adapt `ee_transformer.TemporalTransformer`) → **day embedding** → KMeans
   (K theo silhouette) → **lifestyle states** → KG (nodes+attrs, edges = transition) → **lifestyle map** (state
   mix + weekly rhythm + drift theo năm + priors). Seeded/CPU/deterministic. `feature_mode ∈ {raw, enriched}` = ablation.
+  **State do LLM ĐẶT TÊN** từ hồ sơ thuộc tính (`name_states_llm`, cache + fallback rule) — đặt theo trục thật sự
+  phân biệt (mùa), KHÔNG theo chênh HR ~1bpm → subject thật ra `chilly_winter_rest`/`mild_autumn_active`/`hot_summer_peak`
+  (thay tên rule cũ mỏng, trùng `high_tone_weekday`×2). Đúng "code đo → LLM đặt tên".
 - **Verify:** demo synthetic (3 day-type đã biết) **ARI=1.000**, determinism PASS. Real: 1.761 ngày, embeddings không NaN.
 
 **Đánh giá trung thực (không nhãn → proxy AMI, circularity-safe):** proxy sạch = `month/season`, `workout_day`

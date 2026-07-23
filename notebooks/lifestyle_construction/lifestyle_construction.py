@@ -25,6 +25,7 @@ reuses ee_transformer patterns and the frozen Task-1 vocab via Stage A.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import dataclass, field
@@ -33,6 +34,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from pydantic import BaseModel
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_mutual_info_score, silhouette_score
 
@@ -148,6 +150,8 @@ def build_day_tensor(ep: pd.DataFrame, feature_mode: str = "enriched") -> DayTen
     aux["workout_day"] = aux["date"].map(g["is_workout"].any()).astype(bool).values
     aux["wear_slots"] = aux["date"].map(g.size()).values
     aux["mean_hr"] = aux["date"].map(g["avg_hr"].mean()).values
+    if "weather_temp" in ep.columns:
+        aux["mean_temp"] = aux["date"].map(g["weather_temp"].mean()).values
     return DayTensor(X=X, mask=mask, dates=dates, cont_slices=cont_slices,
                      cat_layout=cat_layout, aux=aux, feature_mode=feature_mode)
 
@@ -261,6 +265,7 @@ def describe_states(labels: np.ndarray, aux: pd.DataFrame) -> pd.DataFrame:
     a["state"] = labels
     rows = []
     for s, grp in a.groupby("state"):
+        top_months = grp["month"].value_counts().head(3).index.tolist()
         rows.append({
             "state": int(s), "n_days": int(len(grp)),
             "median_hr": round(float(grp["mean_hr"].median()), 1),
@@ -268,6 +273,8 @@ def describe_states(labels: np.ndarray, aux: pd.DataFrame) -> pd.DataFrame:
             "workout_day_frac": round(float(grp["workout_day"].mean()), 2),
             "median_wear_slots": int(grp["wear_slots"].median()),
             "top_month": int(grp["month"].mode().iloc[0]) if len(grp) else -1,
+            "top_months": ",".join(str(int(m)) for m in top_months),
+            "mean_temp": round(float(grp["mean_temp"].median()), 1) if "mean_temp" in grp else None,
         })
     return pd.DataFrame(rows)
 
@@ -288,6 +295,92 @@ def name_states(desc: pd.DataFrame) -> dict[int, str]:
                                                           else "mixed")
         names[int(r["state"])] = f"{base}_{day}"
     return names
+
+
+# --- LLM naming (code measures -> LLM names), cached + offline-safe rule fallback ------------ #
+class _StateName(BaseModel):
+    state: int
+    name: str
+
+
+class _StateNames(BaseModel):
+    states: list[_StateName]
+
+
+_NAME_SYSTEM = (
+    "You give each lifestyle day-cluster a short, distinctive lower_snake_case name (2-4 words), "
+    "grounded ONLY in the provided aggregate attributes. Name each cluster by what MOST distinguishes "
+    "it from the others (usually the season/peak months or the wear/activity level) — do NOT name by "
+    "tiny heart-rate gaps of ~1 bpm. Names must be DISTINCT across clusters. Descriptive lifestyle "
+    "labels only — no health, fitness-verdict, or anomaly claims.")
+
+_NAME_CACHE = os.path.join(_REPO_ROOT, "data", "lifestyle_construction", "name_cache")
+
+
+def name_states_llm(desc: pd.DataFrame, priors: dict | None = None,
+                    offline: bool = False) -> tuple[dict[int, str], str]:
+    """LLM names each state from its measured attribute profile; falls back to the deterministic
+    rule `name_states` when offline / no key / any failure. Cached by prompt hash for reproducibility.
+    Returns (names, source) with source in {'llm', 'rule'}."""
+    rule = name_states(desc)
+    if offline:
+        return rule, "rule"
+    try:
+        import episode_enrichment as ea            # reuse the track's .env key loader
+        key = ea._load_gemini_key()
+    except Exception:
+        key = None
+    if not key:
+        return rule, "rule"
+
+    lo, hi = float(desc["median_hr"].min()), float(desc["median_hr"].max())
+    place = ""
+    hc = (priors or {}).get("home_climate_detail")
+    if isinstance(hc, dict):
+        place = hc.get("place", "")
+    lines = []
+    for _, r in desc.iterrows():
+        pos = "lowest" if float(r["median_hr"]) == lo else ("highest" if float(r["median_hr"]) == hi
+                                                            else "middle")
+        lines.append(
+            f"- state {int(r['state'])}: {int(r['n_days'])} days; HR tone {r['median_hr']} bpm "
+            f"({pos} of the states); weekday_frac {r['weekday_frac']}; workout_day_frac "
+            f"{r['workout_day_frac']}; wear {int(r['median_wear_slots'])}/96 slots; peak months "
+            f"{r.get('top_months', r['top_month'])}; mean_temp {r.get('mean_temp', '?')}C")
+    prompt = (f"Home: {place or 'temperate'} (Southern Hemisphere — Dec-Feb summer, Jun-Aug winter). "
+              f"Name these lifestyle day-clusters:\n" + "\n".join(lines))
+
+    os.makedirs(_NAME_CACHE, exist_ok=True)
+    cp = os.path.join(_NAME_CACHE, hashlib.sha256(
+        (_NAME_SYSTEM + "\n" + prompt).encode()).hexdigest()[:16] + ".json")
+    got = None
+    if os.path.exists(cp):
+        try:
+            got = {int(k): v for k, v in json.load(open(cp)).items()}
+        except Exception:
+            got = None
+    if got is None:
+        try:
+            from google import genai
+            from google.genai import types
+            client = genai.Client(api_key=key)
+            cfg = types.GenerateContentConfig(
+                temperature=0, response_mime_type="application/json", response_schema=_StateNames,
+                system_instruction=_NAME_SYSTEM,
+                thinking_config=types.ThinkingConfig(thinking_budget=0))
+            r = client.models.generate_content(model="gemini-3.1-flash-lite", contents=prompt, config=cfg)
+            got = {int(s.state): s.name.strip().lower().replace(" ", "_") for s in r.parsed.states}
+            json.dump({str(k): v for k, v in got.items()}, open(cp, "w"))
+        except Exception:
+            return rule, "rule"
+
+    names, used = {}, {}
+    for st in desc["state"].astype(int):
+        nm = got.get(st) or rule[st]
+        if nm in used.values():                    # guarantee distinct names
+            nm = f"{nm}_m{int(desc.loc[desc['state'] == st, 'top_month'].iloc[0])}"
+        names[st], used[st] = nm, nm
+    return names, "llm"
 
 
 def build_lifestyle_kg(labels: np.ndarray, desc: pd.DataFrame, names: dict) -> tuple:
@@ -369,30 +462,38 @@ class LifestyleResult:
     extra: dict = field(default_factory=dict)
 
 
-def run_stage_b(ep: pd.DataFrame, cfg: LCConfig, priors: dict | None = None) -> LifestyleResult:
-    """B1->B3 for one feature_mode. Returns embeddings, states, KG, map, proxy alignment."""
+def run_stage_b(ep: pd.DataFrame, cfg: LCConfig, priors: dict | None = None,
+                naming: str = "rule") -> LifestyleResult:
+    """B1->B3 for one feature_mode. `naming` = 'rule' (deterministic) or 'llm' (Gemini names the
+    states from their attribute profile, rule fallback). Returns embeddings, states, KG, map, proxy."""
     dt = build_day_tensor(ep, feature_mode=cfg.feature_mode)
     emb = fit_day_embeddings(dt, cfg)
     labels, k, sil = cluster_lifestyle_states(emb, seed=cfg.seed)
     desc = describe_states(labels, dt.aux)
-    names = name_states(desc)
+    if naming == "llm":
+        names, name_src = name_states_llm(desc, priors=priors)
+    else:
+        names, name_src = name_states(desc), "rule"
     nodes, edges = build_lifestyle_kg(labels, desc, names)
     lmap = build_lifestyle_map(labels, desc, names, dt.aux, priors)
+    lmap["naming_source"] = name_src
     proxy = proxy_alignment(labels, dt.aux)
     return LifestyleResult(embeddings=emb, labels=labels, k=k, silhouette=round(float(sil), 4),
                            nodes=nodes, edges=edges, lifestyle_map=lmap, proxy=proxy,
-                           feature_mode=cfg.feature_mode, extra={"aux": dt.aux})
+                           feature_mode=cfg.feature_mode, extra={"aux": dt.aux, "name_source": name_src})
 
 
 def run_and_save(ep: pd.DataFrame, priors: dict | None = None, epochs: int = 12,
-                 results_dir: str = RESULTS_DIR) -> dict:
+                 results_dir: str = RESULTS_DIR, naming: str = "rule") -> dict:
     """End-to-end Stage B for BOTH feature modes + aggregate baseline; persist the enriched
     embeddings/KG/map + the honest proxy-eval table. Shared by L1_lifestyle.py and File 3.
+    `naming` ('rule'|'llm') applies to the saved primary (enriched) states; raw uses rule (unsaved).
     Returns {'primary': LifestyleResult(enriched), 'eval': DataFrame, 'baseline_labels': ndarray}."""
     os.makedirs(results_dir, exist_ok=True)
     results = {}
     for mode in ("enriched", "raw"):
-        res = run_stage_b(ep, LCConfig(epochs=epochs, feature_mode=mode), priors=priors)
+        res = run_stage_b(ep, LCConfig(epochs=epochs, feature_mode=mode), priors=priors,
+                          naming=(naming if mode == "enriched" else "rule"))
         base_labels = aggregate_baseline(ep, res.extra["aux"], k=res.k)
         results[mode] = (res, base_labels, proxy_alignment(base_labels, res.extra["aux"]))
 

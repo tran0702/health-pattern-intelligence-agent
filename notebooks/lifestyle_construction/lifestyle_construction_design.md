@@ -59,9 +59,12 @@ No lifestyle labels exist on an n=1 subject, so the encoder is **self-supervised
   is trained by **masked-episode reconstruction** (mask ~15% real slots, reconstruct continuous MSE
   + categorical CE); the day embedding is the mean-pooled encoder output. Seeded/deterministic.
 - **B2 Lifestyle KG.** KMeans on day embeddings (K by silhouette) → day-type **states**; code
-  measures each state's attributes (median HR, weekday fraction, workout-day fraction, wear slots,
-  top month); rule names them (LLM naming can layer on later). Nodes = states(+attrs), edges =
-  day-to-day transition counts.
+  measures each state's attributes (median HR, weekday/workout fraction, wear slots, peak months,
+  mean temp); the **LLM names** each state from that profile (`name_states_llm`, cached + rule
+  fallback), told to label by what actually distinguishes a cluster (usually season) not by ~1 bpm HR
+  gaps. Nodes = states(+attrs+name), edges = day-to-day transition counts. *Code measures → LLM names.*
+  On the real subject the LLM produced `chilly_winter_rest` / `mild_autumn_active` / `hot_summer_peak`
+  (vs the old rule's thin, duplicate `high_tone_weekday` ×2).
 - **B3 lifestyle map.** State distribution + weekly rhythm (state × weekday) + temporal drift by
   year + subject priors (`global_context.json`, `home_climate.json`).
 - **Output:** `day_embeddings.parquet`, `lifestyle_kg_nodes.csv`, `lifestyle_kg_edges.csv`,

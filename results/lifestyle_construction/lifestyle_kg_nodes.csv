@@ -1,4 +1,4 @@
-state,n_days,median_hr,weekday_frac,workout_day_frac,median_wear_slots,top_month,name
-0,683,85.8,0.73,0.07,59,7,restful_weekday
-1,820,86.6,0.71,0.15,58,3,high_tone_weekday
-2,258,87.5,0.71,0.14,58,1,high_tone_weekday
+state,n_days,median_hr,weekday_frac,workout_day_frac,median_wear_slots,top_month,top_months,mean_temp,name
+0,683,85.8,0.73,0.07,59,7,"7,6,8",11.5,chilly_winter_rest
+1,820,86.6,0.71,0.15,58,3,"3,4,2",17.9,mild_autumn_active
+2,258,87.5,0.71,0.14,58,1,"1,12,2",27.5,hot_summer_peak
