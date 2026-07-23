@@ -1,0 +1,140 @@
+{
+  "n_days": 1761,
+  "state_distribution": {
+    "high_tone_weekday": 1078,
+    "restful_weekday": 683
+  },
+  "weekly_rhythm": {
+    "high_tone_weekday": {
+      "0": 147,
+      "1": 157,
+      "2": 154,
+      "3": 153,
+      "4": 152,
+      "5": 162,
+      "6": 153
+    },
+    "restful_weekday": {
+      "0": 105,
+      "1": 95,
+      "2": 98,
+      "3": 99,
+      "4": 100,
+      "5": 89,
+      "6": 97
+    }
+  },
+  "temporal_drift_by_year": {
+    "2017": {
+      "high_tone_weekday": 34,
+      "restful_weekday": 1
+    },
+    "2018": {
+      "high_tone_weekday": 219,
+      "restful_weekday": 145
+    },
+    "2019": {
+      "high_tone_weekday": 211,
+      "restful_weekday": 154
+    },
+    "2020": {
+      "high_tone_weekday": 226,
+      "restful_weekday": 140
+    },
+    "2021": {
+      "high_tone_weekday": 237,
+      "restful_weekday": 128
+    },
+    "2022": {
+      "high_tone_weekday": 151,
+      "restful_weekday": 115
+    }
+  },
+  "subject_priors": {
+    "global_context": {
+      "roles": {
+        "roles": [
+          {
+            "column": "timestamp",
+            "role": "timestamp",
+            "confidence": 1.0
+          },
+          {
+            "column": "heart_rate",
+            "role": "heart_rate",
+            "confidence": 1.0
+          },
+          {
+            "column": "subject_id",
+            "role": "subject_id",
+            "confidence": 1.0
+          },
+          {
+            "column": "workout_type",
+            "role": "workout_type",
+            "confidence": 1.0
+          }
+        ],
+        "source": "llm"
+      },
+      "fingerprint": {
+        "n_records": 356862,
+        "n_subjects": 1,
+        "span_days": 1761.1,
+        "records_per_day": 202.6,
+        "hr_median": 86.0,
+        "hr_p10": 74.0,
+        "hr_p90": 104.0,
+        "hr_p99": 120.0,
+        "workout_fraction": 0.023,
+        "workout_type_hist": {
+          "Walking": 5887,
+          "Rowing": 1785,
+          "Cycling": 500,
+          "Running": 94,
+          "Hiking": 17
+        },
+        "has_diagnosis": false,
+        "has_medication": false,
+        "subject_variance": {
+          "n_subjects": 1,
+          "inter_subject_resting_median": 74.0,
+          "inter_subject_resting_iqr": null,
+          "intra_subject_daily_std_median": 5.6,
+          "interpretation": "single subject \u00e2\u20ac\u201d inter-subject spread is not meaningful; day-to-day std reflects this person's own volatility"
+        },
+        "missingness": {
+          "night_coverage": 0.271,
+          "day_coverage": 1.0,
+          "night_to_day_ratio": 0.271,
+          "night_missing_heavy": true,
+          "longest_gap_days": 1.94
+        },
+        "notes": "roles source=llm"
+      },
+      "global_context": {
+        "dataset_domain": "consumer_wearable",
+        "population_descriptor": "single individual",
+        "dominant_activities": [
+          "low_impact_steady",
+          "steady_state_cardio"
+        ],
+        "evidence": "n_records: 356862, span_days: 1761.1, workout_fraction: 0.023, night_missing_heavy: true",
+        "confidence": 0.85,
+        "source": "llm"
+      }
+    },
+    "home_climate": {
+      "place": "Gamma Crescent, Panorama",
+      "coord": [
+        -35.00462,
+        138.59756
+      ],
+      "band": "temperate",
+      "temp_median": 14.3,
+      "temp_p10": 9.0,
+      "temp_p90": 24.8,
+      "source": "geocode+weather"
+    }
+  }
+}

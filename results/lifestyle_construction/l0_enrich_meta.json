@@ -1,0 +1,174 @@
+{
+  "vocab_source": "context_vocab.generated_vocab",
+  "n_episodes": 104565,
+  "n_signatures": 326,
+  "used_llm": true,
+  "enrich_source_episodes": {
+    "llm": 104565
+  },
+  "hr_bands": {
+    "p25": 79.33333333333333,
+    "p50": 85.0,
+    "p90": 99.33333333333333
+  },
+  "activity_context_dist": {
+    "daytime_rest": 61839,
+    "evening_rest": 35733,
+    "overnight_rest": 6074,
+    "active_workout": 919
+  },
+  "weather_ctx_dist": {
+    "thermoneutral": 91234,
+    "heat_stress": 8254,
+    "cold_stress": 3507,
+    "extreme_heatwave": 1259,
+    "high_humidity": 311
+  },
+  "location_semantic_known": 523,
+  "sample_signature_labels": [
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "morning",
+      "is_weekday": true,
+      "hr_band": "normal",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "morning",
+      "is_weekday": true,
+      "hr_band": "low",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "afternoon",
+      "is_weekday": true,
+      "hr_band": "low",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "afternoon",
+      "is_weekday": true,
+      "hr_band": "normal",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "evening",
+      "is_weekday": true,
+      "hr_band": "low",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "evening_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "evening",
+      "is_weekday": true,
+      "hr_band": "elevated",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "evening_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "evening",
+      "is_weekday": true,
+      "hr_band": "high",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "evening_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "sleep",
+      "has_place": false,
+      "hour_bucket": "night",
+      "is_weekday": true,
+      "hr_band": "low",
+      "weather_ctx": "thermoneutral",
+      "activity_context": "overnight_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "morning",
+      "is_weekday": true,
+      "hr_band": "low",
+      "weather_ctx": "heat_stress",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "morning",
+      "is_weekday": true,
+      "hr_band": "normal",
+      "weather_ctx": "heat_stress",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "afternoon",
+      "is_weekday": true,
+      "hr_band": "normal",
+      "weather_ctx": "heat_stress",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    },
+    {
+      "is_workout": false,
+      "activity": "rest",
+      "has_place": false,
+      "hour_bucket": "afternoon",
+      "is_weekday": true,
+      "hr_band": "low",
+      "weather_ctx": "heat_stress",
+      "activity_context": "daytime_rest",
+      "workout_type_ctx": "unknown",
+      "enrich_source": "llm"
+    }
+  ]
+}

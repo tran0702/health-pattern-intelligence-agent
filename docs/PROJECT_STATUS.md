@@ -1,8 +1,8 @@
 # PROJECT STATUS — Single Source of Truth
 
 > **Đây là tài liệu trạng thái DUY NHẤT của dự án.** Cập nhật **2026-07-23**.
-> Repo `tran0702/health-pattern-intelligence-agent`, HEAD `4ea9d7d` + **thay đổi Task 3 chưa commit**
-> (3 biến thể Transformer + E6 + E4 §7 — **E6 + E4 ĐÃ CHẠY XONG, có bảng đa-arm + CI**; xem §4⑤).
+> Repo `tran0702/health-pattern-intelligence-agent`, HEAD `90a571d` (Task 3 đã commit+push) +
+> **track mới `lifestyle_construction/` chưa commit** (Stage A LLM-enrich + Stage B Transformer lifestyle — xem §4⑥).
 > Đọc file này là đủ để tiếp tục làm, không cần lịch sử hội thoại.
 >
 > Ký hiệu nguồn: ✅ **đã tự chạy đo trên dữ liệu thật** · 📄 từ tài liệu dự án (có thể cũ) ·
@@ -45,7 +45,7 @@ export.xml
 |---|---|
 | **1. Pipeline** | File 1–4 (+3b) |
 | **2. Module chung** | `graph_model.py` (node features + GCN-DOMINANT) · `context_baseline/`: `context_library.py` (vocab, SubjectContext/EpisodeContext) · `context_providers.py` (Individual context từ data) · `global_baseline.py` (LLM baseline + detect + translate) · `global_context.py` (**Global context**: roles + fingerprint + classify) |
-| **3. Track cô lập** | `context_vocab/` (Task 1) · `enrichment_experiment/` (LLM-vs-ML trên ExtraSensory) · `location_context/` (DBSCAN + geocode) |
+| **3. Track cô lập** | `context_vocab/` (Task 1) · `enrichment_experiment/` (LLM-vs-ML trên ExtraSensory) · `location_context/` (DBSCAN + geocode) · `lifestyle_construction/` (LLM enrich episode + Transformer dựng lifestyle — §4⑥) |
 | **4. Agent legacy** | `src/agents/` — đã unify Gemini, tự load `.env` |
 
 **Hạ tầng:** 1 file `.env` ở repo root · **1 provider LLM: Gemini (`google-genai`)** · mọi call
@@ -60,11 +60,12 @@ export.xml
 | Semantic Construction ← *Ontology* → BKG | ⚠️ BKG có, **ontology (COPE) còn generic/TODO** |
 | Context-aware Anomaly Detection (GNN) ← *Standard Definitions* | ✅ (node + edge) |
 | Post-hoc Reasoning ← LLM | ⚠️ chỉ có `translate()` deterministic |
-| Personal Lifestyle Semantic Construction → Lifestyle KG | ❌ chưa xây |
-| Lifestyle Resolution → lifestyle map | ❌ chưa xây |
+| Personal Lifestyle Semantic Construction → Lifestyle KG | ⚠️ **track `lifestyle_construction/` đã dựng** (Stage B self-supervised Transformer → day-embedding → KG states, §4⑥) |
+| Lifestyle Resolution → lifestyle map | ⚠️ **có bản đầu** (`lifestyle_map.json`: state mix + weekly rhythm + drift theo năm, §4⑥) |
 
 **Khái niệm chưa mô hình hóa:** Observer Point · stateful/multi-cycle theo epoch (hiện **stateless,
-1 lượt**) · anomalous community/ego-net. ⇒ **Code phủ nửa trên sơ đồ.**
+1 lượt**) · anomalous community/ego-net. ⇒ Code phủ **nửa trên** sơ đồ; **nửa dưới (Lifestyle
+Construction/KG/map) giờ có bản đầu** ở track `lifestyle_construction/` (§4⑥), chưa nối vào File 1–4.
 
 ---
 
@@ -344,6 +345,46 @@ lớn nhưng **bất khả thi CPU** (§ đo ở trên). Scale `--train-cap` lê
 > 📄 Bản plan English đầy đủ (đã duyệt): `.claude/plans/gleaming-doodling-cosmos.md` (ngoài repo — nội dung cốt
 > lõi đã tóm ở đây để git giữ được).
 
+### ⑥ Lifestyle Construction — nửa dưới p3/9 (track mới `lifestyle_construction/`, 2026-07-23)
+
+**Vì sao:** File 2 "context definition" chỉ **chuẩn hoá** nhãn (LLM Step 4 echo `unknown` vì prompt không
+có tín hiệu) → episode thưa (`location_type` 99,5% unknown, `activity` 93% rest). Và nửa dưới sơ đồ Asara
+(Lifestyle Construction/KG/map) chưa xây. User chốt hướng **kết hợp**: LLM enrich episode **rồi** Transformer
+dựng lifestyle. Track cô lập, đọc `data/processed` + `results/location_context` (read-only), ghi `results/
+lifestyle_construction/`. **Chưa nối File 1–4** (nối "Step 4b" vào File 2 là opt-in, chờ duyệt).
+
+- **Stage A `episode_enrichment.py`:** code dựng **signature** per-episode (is_workout, activity, has_place,
+  hour_bucket, weekday, HR-band-vs-personal, weather_ctx) → **326 signature** → LLM (Gemini, temp=0, cache)
+  gán `activity_context` (enum situation mới, per-episode) + `workout_type` (vocab Task-1); `weather_ctx` từ
+  `WeatherVocab` thuần code. Provenance `enrich_source`, fallback deterministic (offline OK). Out:
+  `behavioral_episodes_enriched.parquet`. **LLM label sạch/nhất quán hơn rule** (gán theo giờ+workout, bỏ
+  `light_activity` nhiễu).
+- **Stage B `lifestyle_construction.py`:** DAY = episode trong 96 slot 15' → **self-supervised Transformer**
+  (masked-episode reconstruction, adapt `ee_transformer.TemporalTransformer`) → **day embedding** → KMeans
+  (K theo silhouette) → **lifestyle states** → KG (nodes+attrs, edges = transition) → **lifestyle map** (state
+  mix + weekly rhythm + drift theo năm + priors). Seeded/CPU/deterministic. `feature_mode ∈ {raw, enriched}` = ablation.
+- **Verify:** demo synthetic (3 day-type đã biết) **ARI=1.000**, determinism PASS. Real: 1.761 ngày, embeddings không NaN.
+
+**Đánh giá trung thực (không nhãn → proxy AMI, circularity-safe):** proxy sạch = `month/season`, `workout_day`
+(không phải target); `weekday` báo cáo nhưng **flag phụ thuộc** (giờ có sẵn qua slot).
+
+| Arm | month | season | workout_day |
+|---|---|---|---|
+| **transformer_enriched (LLM)** | **0.167** | **0.192** | 0.008 |
+| transformer_enriched (fallback offline) | 0.108 | 0.123 | 0.004 |
+| transformer_raw | 0.117 | 0.136 | 0.052 |
+| aggregate_baseline | 0.028 | 0.023 | **0.317** |
+
+- **LLM enrichment GIÚP (đo được):** enriched-LLM season 0.192 > raw 0.136 > fallback 0.123 > baseline 0.023.
+  (Fallback KHÔNG giúp vì là hàm thô của raw → phải bản LLM mới có giá trị.)
+- **Cả 2 Transformer ≫ baseline ở month/season** (sequence model bắt nhịp mùa). **Baseline thắng `workout_day`**
+  (0.317) — day-pool pha loãng ~900 episode workout hiếm (không giấu).
+- ⚠️ **Caveat:** 1 seed (hướng nhất quán cả month+season; nên multi-seed để chắc); enrich episode non-workout là
+  **suy luận** LLM (ablation cho thấy suy luận **có ích**, không phải nhiễu); "giúp" ở trục **mùa**, không phải sự-kiện-hiếm.
+
+Chạy: `python demo_lifestyle_construction.py --offline` · `L0_enrich.py [--offline]` · `L1_lifestyle.py --offline`.
+Doc đầy đủ: `notebooks/lifestyle_construction/lifestyle_construction_design.md`.
+
 ---
 
 ## 5. Guardrail
@@ -464,7 +505,7 @@ notebooks/
   graph_model.py                       # GCN-DOMINANT dùng chung File 3 & 4
   context_baseline/   context_library.py · context_providers.py · global_baseline.py
   context_vocab/      context_profile.py · vocab_generator.py · vocabulary.json · generated_vocab.py
-  enrichment_experiment/ · location_context/
+  enrichment_experiment/ · location_context/ · lifestyle_construction/ (Stage A enrich + Stage B Transformer lifestyle, §4⑥)
 src/agents/           legacy Gemini agents
 results/              output theo track (git-tracked) · data/ (git-ignored)
 docs/                 PROJECT_STATUS.md (file này) · workflow.md · methodology.md

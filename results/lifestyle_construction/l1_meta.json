@@ -1,0 +1,36 @@
+{
+  "config_epochs": 12,
+  "priors_loaded": [
+    "global_context",
+    "home_climate"
+  ],
+  "eval": [
+    {
+      "arm": "transformer_enriched",
+      "k": 3,
+      "silhouette": 0.287,
+      "month_ami": 0.1674,
+      "season_ami": 0.1915,
+      "workout_day_ami": 0.0084,
+      "weekday_ami_DEPENDENT": -0.0004
+    },
+    {
+      "arm": "aggregate_baseline",
+      "k": 3,
+      "silhouette": NaN,
+      "month_ami": 0.0278,
+      "season_ami": 0.0225,
+      "workout_day_ami": 0.3167,
+      "weekday_ami_DEPENDENT": 0.0105
+    },
+    {
+      "arm": "transformer_raw",
+      "k": 3,
+      "silhouette": 0.2956,
+      "month_ami": 0.1172,
+      "season_ami": 0.1357,
+      "workout_day_ami": 0.0516,
+      "weekday_ami_DEPENDENT": 0.0017
+    }
+  ]
+}
