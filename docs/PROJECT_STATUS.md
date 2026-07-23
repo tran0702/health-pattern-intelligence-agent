@@ -34,8 +34,8 @@ export.xml
  → [File 1] 01_ingestion            → hr_raw · hr_features (window 15') · workouts
  → [File 2] 02_context_semantic     → behavioral_episodes + BKG (node/edge_table) + weather
  → [File 3] 03_lifestyle_construction   ⚑ ĐÃ THAY "HR-anomaly" → LIFESTYLE (2026-07-23, user yêu cầu)
-        SubjectContext (prior) → Stage A: LLM enrich episode → Stage B: Transformer tự-giám-sát
-        → day_embeddings + lifestyle states (KG) + lifestyle_map
+        Context 2 tầng (Task 2, LIVE): Global auto-classify dataset (tự bật/tắt prior) → Individual SubjectContext
+        → Stage A: LLM enrich episode → Stage B: Transformer tự-giám-sát → day_embeddings + states (KG) + lifestyle_map
  → [File 4] 04_lifestyle_report     → states + weekly/seasonal rhythm + transitions + validation table
    [File 3b] cohort baseline (BIDSleep) — PENDING, chưa có data
    (bản anomaly cũ 03_baseline_gnn_anomaly / 04_audit_metrics → backup `notebooks/_archive/`;

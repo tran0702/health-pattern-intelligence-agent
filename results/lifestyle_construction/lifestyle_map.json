@@ -75,6 +75,8 @@
     "heart_health": "unknown",
     "sleep": "unknown",
     "health_conditions": "none",
+    "dataset_domain": "consumer_wearable",
+    "global_prior_active": false,
     "global_context_detail": {
       "roles": {
         "roles": [
