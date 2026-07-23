@@ -332,3 +332,51 @@ không phải hiểu ngữ nghĩa. ⇒ **Thứ tự C0 .248 < C1 .307 < ML .344 
 beach dễ). Đọc là "**semantic location mở khoá LLM**", KHÔNG phải "LLM > ML nói chung" (chưa cho ML toạ độ; C1/C2-ML là
 bài toán person-specific/gần-rò-rỉ, paper gốc cố tình loại). **Chỉ còn (tuỳ chọn):** bootstrap-CI theo user cho khoảng
 tin cậy C0→C2.
+
+---
+
+## 10. Nhánh RQ1c — Transformer arms (Task 3 của Asara)
+
+### 10.1 Câu hỏi
+> Asara giao: **tự tay dựng Transformer** cho context extraction (để có kinh nghiệm), thay vì chỉ dùng
+> GCN + Gemini-as-API. RQ1c: **các biến thể Transformer khác nhau** map feature cảm biến → nhãn context
+> chính xác tới đâu, **so với nhau** và so với ML control + LLM đã có (RQ1)?
+
+### 10.2 Quyết định thiết kế đã chốt
+- **Transformer đọc TRỰC TIẾP feature số (225 chiều), KHÔNG phải text.** Transformer text huấn luyện từ đầu
+  trên ~40k câu ngắn sẽ học embedding kém → không đo đúng năng lực Transformer; **feature-token self-attention**
+  là chuẩn cho tabular và so **apples-to-apples** với ML control (cùng 225 feature).
+- **CPU-only**, torch 2.10+cpu, **không cần API key**. `temperature=0`-analogue = seed cố định (torch+numpy)
+  → tái lập; `selftest` assert 2 lần seeded trùng khớp.
+- Mọi arm xuất **full-test, đúng schema `e3_pred_ml.parquet`** → E4 chấm y hệt ML (macro-F1/field + bootstrap CI theo user).
+
+### 10.3 Ba biến thể (khác nhau ở *token đại diện cho cái gì*)
+| # | Biến thể | Token | Trục | Nhà |
+|---|---|---|---|---|
+| **A** | `feature` — FT-Transformer | 1 token/feature (+[CLS]) → 226 | attention **giữa các feature** | `ee_transformer.ContextTransformer` (`FeatureTokenizer`) |
+| **B** | `group` | 1 token/nhóm sensor (~12) | attention **giữa nhóm cảm biến** | `ee_transformer.ContextTransformer` (`GroupTokenizer`) |
+| **C** | `temporal` | 1 token/mẫu-phút, cửa sổ K mẫu gần nhất của **cùng người** (gap-aware) → predict nhãn mẫu cuối | attention **theo thời gian** | `ee_transformer.TemporalTransformer` |
+
+Kiến trúc chung: encoder d_model=64 / 2 lớp / 4 head / GELU, pool `[CLS]` (A,B) hoặc slot cuối (C), **3 head
+multi-task** location/activity/companion, tiền xử lý y hệt ML control (median impute + StandardScaler, fit per-fold
+train). C: `_make_windows` xây cửa sổ phải-canh-lề, ngắt khi qua ranh giới người hoặc gap > `max_gap_s` (mặc định
+600 s); diagnostic `mean_real_window` báo số timestep thật/cửa sổ (~1.0 = data quá thưa cho temporal).
+
+### 10.4 Deliverables & trạng thái
+- ✅ **`ee_transformer.py`** — A/B (`tf_fit_predict`, `token_mode`) + C (`temporal_fit_predict`) + dispatcher
+  `run_fold(variant)` + `selftest(variant)`. **Đã viết + compile OK; CHƯA chạy.**
+- ✅ **`E6_transformer.py`** — runner 5 fold/biến thể → `e6_pred_{feature,group,temporal}.parquet` +
+  `e6_{variant}_meta.json` (config, giây/fold, macro-F1 full-test + eval-sample, `mean_real_window` cho temporal).
+  Flags `--variant {feature|group|temporal|all}`, `--folds` (probe 1 fold không lưu preds), `--selftest`,
+  `--train-cap/--epochs/--window/--max-gap`. **Đã viết + compile OK; CHƯA chạy.**
+- ✅ **E4 mở rộng** — thêm §7: bảng đa-arm (ML · LLM · 3 Transformer) `e4_multi_arm.csv` + **bootstrap CI theo
+  user** cho mọi cặp (Transformer−ML, Transformer−LLM, Transformer−Transformer) `e4_multi_arm_ci.csv`.
+  Guard theo `e6_pred_*.parquet` tồn tại → E4 vẫn chạy nếu chưa có (no-op). **Đã thêm cell; CHƯA chạy.**
+
+### 10.5 Verify (khi chạy — session sau)
+1. `python E6_transformer.py --variant feature --folds 0` → probe timing fold-0 (226 token có thể chậm CPU).
+   Nếu chậm → `--variant group` (~12 token) hoặc giảm `--train-cap`.
+2. `python E6_transformer.py --variant all --selftest` → PASS cả 3 (2 lần seeded trùng).
+3. `python E6_transformer.py --variant all` → 3 parquet + 3 meta. Kiểm `mean_real_window` của temporal
+   (nếu ~1.0 → temporal thoái hoá về single-sample, báo trung thực).
+4. Re-run E4 (nbconvert) → §7 bảng đa-arm + CI; assert index khớp gold, không NaN ở cột eval.
