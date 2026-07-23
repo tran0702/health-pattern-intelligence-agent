@@ -1,0 +1,45 @@
+{
+  "variant": "feature",
+  "config": {
+    "d_model": 64,
+    "nhead": 4,
+    "num_layers": 2,
+    "dim_feedforward": 128,
+    "dropout": 0.1,
+    "epochs": 3,
+    "batch_size": 512,
+    "lr": 0.001,
+    "train_cap": 6000,
+    "infer_batch": 2048,
+    "variant": "feature",
+    "token_mode": "feature",
+    "window": 16,
+    "max_gap_s": 600,
+    "seed": 0
+  },
+  "folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "seconds_per_fold": {
+    "0": 245.0,
+    "1": 287.2,
+    "2": 272.7,
+    "3": 230.4,
+    "4": 209.1
+  },
+  "n_pred": 377346,
+  "macro_f1_full_test": {
+    "location": 0.1811,
+    "activity": 0.1491,
+    "companion": 0.3632
+  },
+  "macro_f1_eval_sample": {
+    "location": 0.2706,
+    "activity": 0.141,
+    "companion": 0.3064
+  }
+}

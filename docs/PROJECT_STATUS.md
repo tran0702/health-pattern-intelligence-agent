@@ -2,7 +2,7 @@
 
 > **Đây là tài liệu trạng thái DUY NHẤT của dự án.** Cập nhật **2026-07-23**.
 > Repo `tran0702/health-pattern-intelligence-agent`, HEAD `4ea9d7d` + **thay đổi Task 3 chưa commit**
-> (3 biến thể Transformer + E6 + E4 §7 — xem §4⑤).
+> (3 biến thể Transformer + E6 + E4 §7 — **E6 + E4 ĐÃ CHẠY XONG, có bảng đa-arm + CI**; xem §4⑤).
 > Đọc file này là đủ để tiếp tục làm, không cần lịch sử hội thoại.
 >
 > Ký hiệu nguồn: ✅ **đã tự chạy đo trên dữ liệu thật** · 📄 từ tài liệu dự án (có thể cũ) ·
@@ -78,7 +78,7 @@ occupation · demographic attributes
 |---|---|---|
 | **1** | LLM tự sinh context vocabulary (không gõ tay) | ✅ **XONG** — 10 chiều/70 term, **10/10 từ LLM thật**, freeze `vocabulary.json` + code-gen `generated_vocab.py` |
 | **2** | Tự phân loại 2 cấp trên dataset **bất kỳ**: **Global** (dataset nói về gì) + **Individual** (người này là ai) | ✅ **XONG** — Individual ✅ (đã gỡ circularity §4①) · Global ✅ (`global_context.py`, §4②) · **bước 6 nối prior ✅** (`global_prior_from_context` → `build_subject_context`, confidence-gated) · (enhancement `occupation`/`sleep` predictor từ data = §4④, không chặn Task 2) |
-| **3** | Thử nghiệm mô hình Transformer cho trích xuất ngữ cảnh | ⏳ **ĐANG LÀM** — scope mở thành **so 3 biến thể Transformer với nhau** (A feature-token · B group-token · C temporal) + ML + LLM trong 1 bảng đa-arm. **Toàn bộ code đã viết + compile OK, CHƯA chạy** (§4⑤) |
+| **3** | Thử nghiệm mô hình Transformer cho trích xuất ngữ cảnh | ✅ **ĐÃ CHẠY (2026-07-23)** — 3 biến thể Transformer (A feature · B group · C temporal) + ML + LLM trong 1 bảng đa-arm + bootstrap CI theo user. Kết quả: **TF-group ≈ ML** (tie cả 3 field), **TF-temporal thắng ML ở location**, **TF-feature kém nhất** (§4⑤). Còn lại: scale train_cap + trình Asara |
 
 **Đã có sẵn & chạy được cho Task 2:** `build_subject_context` **tự động** gán `age_band` /
 `fitness_level` / `home_climate`; chuỗi `SubjectContext → establish_baseline →
@@ -290,13 +290,56 @@ nhau** (khác nhau ở *token đại diện cho cái gì*), tất cả trong **1
   `e4_multi_arm_ci.csv`. Guard theo `e6_pred_*.parquet` tồn tại → no-op nếu chưa chạy E6.
 - ✅ **`context_enrichment_experiment_plan.md` §10 (RQ1c):** câu hỏi + 3 biến thể + method + verify.
 
-**Compute:** model nhỏ CPU; feature-mode 226 token có thể chậm → fallback `--variant group` (~12 token) hoặc
-giảm `--train-cap`. ⚠️ **Chưa Transformer nào chạy** → session sau **probe lại fold 0** (`--variant feature
---folds 0`) trước khi chạy full 3 biến thể.
+**✅ Compute ĐÃ ĐO THẬT (2026-07-23, 16 core):**
+- **Selftest cả 3 biến thể PASS** (chạy được + tái lập).
+- **Inference full-test/fold** (cố định): feature **~71s** · group **~18s** · temporal **~22s**.
+- **feature-mode là nút thắt** (attention O(L²) trên 226 token): config gốc `train_cap=60000/epochs=8`
+  = **~1.5–2.5h/FOLD → BẤT KHẢ THI**. Đo `train_cap=12000/epochs=4` = **484s/fold** (~40′ cho 5 fold,
+  chỉ riêng feature). ⚠️ **ĐỪNG chạy lại 60k/8ep.**
+- 💡 **Config chốt cho lần chạy đầu (nhẹ, giữ đủ 225 feature để so công bằng): `train_cap=6000 epochs=3`**
+  → ước ~25–30′ cho cả 3 biến thể × 5 fold, chạy nền. Scale train_cap lên sau bằng `--force` khi đã biết timing.
+- ✅ **E6 giờ CHECKPOINT theo fold** (`e6_pred_<variant>_fold<k>.parquet`, lưu ngay sau mỗi fold → resumable,
+  crash mất tối đa 1 fold) + `--force` (tính lại) + `--threads` (mặc định = số core). Ý "train fold nào lưu fold đó".
 
-**Verify (§9):** `python E6_transformer.py --variant feature --folds 0` (probe) → `--variant all --selftest`
-(PASS 3 biến thể) → `--variant all` (3 parquet + meta) → re-run E4 nbconvert → §7 bảng đa-arm + CI;
-assert index khớp gold, không NaN cột eval; kiểm `mean_real_window` temporal (nếu ~1.0 → báo thoái hoá).
+**▶️ LỆNH CHẠY LẠI (1 lệnh, chạy nền được):**
+```bash
+cd notebooks/enrichment_experiment && OMP_NUM_THREADS=16 python -u E6_transformer.py --variant all --train-cap 6000 --epochs 3
+```
+→ ra `e6_pred_{feature,group,temporal}.parquet` + meta. Rồi **re-run E4** (nbconvert) → §7 bảng đa-arm +
+bootstrap CI. Verify: assert index khớp gold, không NaN cột eval; kiểm `mean_real_window` temporal (nếu ~1.0
+→ data quá thưa, báo thoái hoá). Nếu vẫn muốn nhanh hơn nữa: `--variant group` trước (rẻ nhất), hoặc giảm `--train-cap`.
+
+#### ✅ ĐÃ CHẠY XONG + KẾT QUẢ (2026-07-23, `train_cap=6000 epochs=3`, 16 core)
+
+Chạy nền `--variant all` (~25′ tổng): **timing/fold** feature ~209–287s · group ~20s · temporal ~25s.
+Verify PASS: 3 preds đều 377.346 dòng, index khớp gold, 0 NaN, 0 dup. **`mean_real_window` temporal ≈ 15.6–15.9/16**
+→ cửa sổ gần đầy mẫu thật, **KHÔNG thoái hoá**. Output: `e6_pred_{variant}.parquet` + `e6_{variant}_meta.json`
++ `e4_multi_arm.csv` + `e4_multi_arm_ci.csv`.
+
+**macro-F1 (eval-sample, so công bằng — LLM chỉ chạy trên eval sample):**
+
+| Arm | activity | companion | location |
+|---|---|---|---|
+| **ML** (control) | **0.283** | **0.403** | 0.344 |
+| LLM (Gemini few-shot) | 0.229 | 0.287 | 0.248 |
+| TF-feature (A) | 0.141 | 0.306 | 0.271 |
+| TF-group (B) | 0.257 | 0.344 | 0.334 |
+| **TF-temporal (C)** | 0.255 | 0.327 | **0.368** |
+
+**Bootstrap CI theo user (1000×) — verdict có ý nghĩa (CI loại 0):**
+- **TF-group ≈ ML: TIE cả 3 field** (activity/companion/location) → Transformer tự dựng đơn giản (12 sensor-group
+  token) **sánh ngang ML control**. Kết quả mạnh nhất cho Task 3.
+- **TF-temporal thắng ML ở `location`** (+0.024, CI [+0.001,+0.057] — marginal) nhưng **thua ML ở `companion`** (−0.076).
+- **TF-feature KÉM NHẤT có ý nghĩa** — thua ML (cả 3 field), thua LLM (`activity`), thua cả group & temporal
+  (`activity`,`location`). FT-Transformer trên 226 token underfit với train_cap nhỏ → **biến thể đắt nhất (O(L²)) tệ nhất**.
+- **TF-group & TF-temporal thắng LLM ở `location`** (+0.086 / +0.121) — numeric Transformer > LLM text-summary cho
+  location (khi LLM KHÔNG có geocode; nhớ RQ1b/C2: geocode mới cứu LLM location lên .455).
+- Các cặp còn lại (group/temporal vs ML ở activity; hầu hết vs-LLM ở companion/activity) = **tie**.
+
+💡 **Kết luận Task 3 (cho Asara):** "token đại diện cho cái gì" **quyết định**: trục **thời gian** (temporal) và **nhóm
+cảm biến** (group) > **từng feature** (feature) khi compute hạn chế. TF-group ngang ML, TF-temporal nhỉnh ML ở location.
+⚠️ **Caveat honest:** config nhẹ `6000/3ep` (apples-to-apples cùng 225 feature); TF-feature có thể khá hơn ở train_cap
+lớn nhưng **bất khả thi CPU** (§ đo ở trên). Scale `--train-cap` lên (dùng `--force`) là bước tinh chỉnh tiếp theo nếu cần.
 
 > 📄 Bản plan English đầy đủ (đã duyệt): `.claude/plans/gleaming-doodling-cosmos.md` (ngoài repo — nội dung cốt
 > lõi đã tóm ở đây để git giữ được).

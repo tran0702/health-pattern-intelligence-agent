@@ -25,11 +25,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from dataclasses import asdict
 
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.metrics import f1_score
 
 import ee_common as ee
@@ -83,12 +85,22 @@ def run_variant(variant: str, feat_df, gold, folds, features, eval_idx, args) ->
     which = sorted(folds) if args.folds is None else args.folds
     print(f"\n=== variant={variant}  folds={which}  cfg={asdict(cfg)} ===", flush=True)
 
+    # Per-fold checkpointing: each fold is saved the moment it finishes, so a long run is
+    # resumable (re-running skips folds already on disk) and a crash loses at most one fold.
     parts, secs = [], {}
     for k in which:
+        ckpt = ee.RESULTS_DIR / f"e6_pred_{variant}_fold{k}.parquet"
+        if ckpt.exists() and not args.force:
+            print(f"  fold {k}: cached -> {ckpt.name}", flush=True)
+            parts.append(pd.read_parquet(ckpt).set_index(KEY).sort_index())
+            secs[k] = "cached"
+            continue
         t0 = time.time()
-        parts.append(tf.run_fold(k, feat_df, gold, folds, features, cfg))
+        pred_k = tf.run_fold(k, feat_df, gold, folds, features, cfg)
         secs[k] = round(time.time() - t0, 1)
-        print(f"  fold {k}: {secs[k]}s", flush=True)
+        pred_k.reset_index().to_parquet(ckpt, index=False)   # checkpoint immediately
+        parts.append(pred_k)
+        print(f"  fold {k}: {secs[k]}s -> saved {ckpt.name}", flush=True)
     pred = pd.concat(parts).sort_index()
 
     full = macro_f1(pred, gold, pred.index)
@@ -120,8 +132,12 @@ def main() -> None:
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--window", type=int, default=None, help="temporal window K")
     ap.add_argument("--max-gap", type=int, default=None, help="temporal max gap seconds (<0 = off)")
+    ap.add_argument("--force", action="store_true", help="recompute folds even if a checkpoint exists")
+    ap.add_argument("--threads", type=int, default=os.cpu_count() or 1, help="torch CPU threads")
     args = ap.parse_args()
 
+    torch.set_num_threads(args.threads)
+    print(f"torch threads: {torch.get_num_threads()}", flush=True)
     ee.ensure_output_dirs()
     feat_df, gold, folds, features = load_inputs()
     print(f"rows: {len(feat_df):,} | features: {len(features)} | folds: {list(folds)}", flush=True)
