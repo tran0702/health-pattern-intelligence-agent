@@ -389,6 +389,13 @@ lifestyle_construction/`. **Chưa nối File 1–4** (nối "Step 4b" vào File 
 - ⚠️ **Caveat:** 1 seed (hướng nhất quán cả month+season; nên multi-seed để chắc); enrich episode non-workout là
   **suy luận** LLM (ablation cho thấy suy luận **có ích**, không phải nhiễu); "giúp" ở trục **mùa**, không phải sự-kiện-hiếm.
 
+**⚑ Regime shifts (File 4 §5, 2026-07-24):** `segment_regimes` (run ≥5 ngày cùng state, merge flicker) →
+`regime_breaks` (code đo delta HR/temp/wear/workout + `p_transition` + `season_share`; `<0.15` = **off-season
+departure**) → `explain_breaks_llm` (LLM viết 1 câu mô tả/điểm gãy, cache + fallback). **Là "lệch lối sống",
+KHÔNG phải anomaly detection.** Kết quả thật: 38 regime bền; top-6 điểm gãy đều là **chuyển mùa vào đông
+tháng 5** (off-season = 0/6 → nếp sống ổn định theo mùa). **Phát hiện đáng chú ý 2019-05-07:** workout-day
+**67% (36/54) → 9% (11/127)** kéo dài ~4 tháng, kèm mean HR **+5.7 bpm** — một thay đổi hành vi thật.
+
 Chạy: `python demo_lifestyle_construction.py --offline` · `L0_enrich.py [--offline]` · `L1_lifestyle.py --offline`.
 Doc đầy đủ: `notebooks/lifestyle_construction/lifestyle_construction_design.md`.
 

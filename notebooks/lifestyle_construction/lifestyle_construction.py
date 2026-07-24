@@ -412,6 +412,204 @@ def build_lifestyle_map(labels, desc, names, aux, priors: dict | None = None) ->
 
 
 # --------------------------------------------------------------------------- #
+# Regime segmentation + break points (lifestyle DEVIATION, not HR anomaly)
+#
+# A "regime" is a sustained run of days in the same lifestyle state; a "break" is the
+# boundary between two regimes. Everything below is CODE-MEASURED — the LLM only
+# phrases the interpretation afterwards (explain_breaks_llm). Descriptive only: this
+# asks "when did this person's own routine shift?", never "is this person unwell?".
+# --------------------------------------------------------------------------- #
+OFF_SEASON_SHARE = 0.15   # a state covering <15% of days in those months = off-season for this person
+
+
+def daily_summary(ep: pd.DataFrame) -> pd.DataFrame:
+    """Light per-day aggregates for the regime analysis (no day-tensor build)."""
+    e = ep.copy()
+    e["date"] = pd.to_datetime(e["datetime"]).dt.tz_localize(None).dt.normalize()
+    g = e.groupby("date")
+    out = pd.DataFrame({
+        "mean_hr": g["avg_hr"].mean(),
+        "wear_slots": g.size(),
+        "workout_day": g["is_workout"].any(),
+    })
+    if "weather_temp" in e.columns:
+        out["mean_temp"] = g["weather_temp"].mean()
+    out = out.reset_index()
+    out["month"] = out["date"].dt.month
+    return out.sort_values("date").reset_index(drop=True)
+
+
+def segment_regimes(days: pd.DataFrame, state_col: str = "state_name",
+                    min_len: int = 5) -> pd.DataFrame:
+    """Merge consecutive same-state days into regimes; keep only sustained runs
+    (>= min_len days) so ordinary 1-2 day flicker is not mistaken for a shift."""
+    d = days.sort_values("date").reset_index(drop=True)
+    seg = (d[state_col] != d[state_col].shift()).cumsum()
+    segs = (d.groupby(seg)
+              .agg(start=("date", "min"), end=("date", "max"),
+                   state=(state_col, "first"), n_days=("date", "size"))
+              .reset_index(drop=True))
+    segs = segs[segs["n_days"] >= min_len].reset_index(drop=True)
+    # Dropping short runs can leave two same-state regimes adjacent; merge them so a
+    # brief flicker is not later reported as a state "change" back onto itself.
+    if len(segs) > 1:
+        grp = (segs["state"] != segs["state"].shift()).cumsum()
+        segs = (segs.groupby(grp)
+                    .agg(start=("start", "min"), end=("end", "max"),
+                         state=("state", "first"))
+                    .reset_index(drop=True))
+    # Recount over the merged SPAN (summing the pre-merge runs would undercount the
+    # short interruptions that were absorbed, and would not match the delta windows).
+    segs["n_days"] = [int(((d["date"] >= s) & (d["date"] <= e)).sum())
+                      for s, e in zip(segs["start"], segs["end"])]
+    return segs
+
+
+def regime_breaks(regimes: pd.DataFrame, days: pd.DataFrame,
+                  state_col: str = "state_name", top_k: int = 6) -> pd.DataFrame:
+    """Boundaries between sustained regimes + what MEASURABLY changed across each.
+
+    Notability (a transparent heuristic, not a p-value): rare transitions that start a
+    LONG new regime rank highest, boosted when the new regime is 'off-season' for the
+    calendar months it covers (i.e. the person left their usual seasonal pattern)."""
+    if len(regimes) < 2:
+        return pd.DataFrame()
+    d = days.sort_values("date").reset_index(drop=True)
+    # Share of each state WITHIN each calendar month = the person's own seasonal norm.
+    # (A modal-state test is useless here: one "shoulder" state can be modal in most
+    # months, so everything else would look off-season. Share answers the right
+    # question — how usual is THIS state at THIS time of year for THIS person?)
+    share = pd.crosstab(d["month"], d[state_col], normalize="index")
+    # regime-level transition probabilities P(to | from)
+    pairs = list(zip(regimes["state"][:-1], regimes["state"][1:]))
+    from_counts: dict = {}
+    for a, b in pairs:
+        from_counts.setdefault(a, {})
+        from_counts[a][b] = from_counts[a].get(b, 0) + 1
+
+    def _win(r):
+        m = (d["date"] >= r["start"]) & (d["date"] <= r["end"])
+        return d[m]
+
+    rows = []
+    for i in range(1, len(regimes)):
+        a, b = regimes.iloc[i - 1], regimes.iloc[i]
+        wa, wb = _win(a), _win(b)
+        tot = sum(from_counts.get(a["state"], {}).values()) or 1
+        p_trans = from_counts.get(a["state"], {}).get(b["state"], 0) / tot
+        # how usual is the NEW state during the months this regime actually covers?
+        mw = wb["month"].value_counts(normalize=True)
+        season_share = 0.0
+        if b["state"] in share.columns:
+            season_share = float(sum(w * share.loc[m, b["state"]]
+                                     for m, w in mw.items() if m in share.index))
+        off_season = season_share < OFF_SEASON_SHARE
+
+        def _d(col):
+            if col not in d.columns:
+                return None
+            va, vb = wa[col].mean(), wb[col].mean()
+            return None if (pd.isna(va) or pd.isna(vb)) else round(float(vb - va), 1)
+
+        rows.append({
+            "break_date": b["start"].date().isoformat(),
+            "from_state": a["state"], "to_state": b["state"],
+            "days_before": int(a["n_days"]), "days_after": int(b["n_days"]),
+            "p_transition": round(p_trans, 3), "season_share": round(season_share, 3),
+            "off_season": bool(off_season),
+            "d_mean_hr": _d("mean_hr"), "d_mean_temp": _d("mean_temp"),
+            "d_wear_slots": _d("wear_slots"),
+            "d_workout_frac": (None if "workout_day" not in d.columns else
+                               round(float(wb["workout_day"].mean() - wa["workout_day"].mean()), 3)),
+            "notability": round((1.0 - p_trans) * float(np.log1p(b["n_days"]))
+                                * (1.5 if off_season else 1.0), 3),
+        })
+    out = pd.DataFrame(rows).sort_values("notability", ascending=False)
+    return out.head(top_k).reset_index(drop=True)
+
+
+_BREAK_SYSTEM = (
+    "You describe SHIFTS in a person's own lifestyle routine, using ONLY the measured numbers "
+    "given for each shift. One short sentence per shift: say what changed (season/state, heart-rate "
+    "tone, temperature, wear time, workout frequency) and whether it looks like an ordinary seasonal "
+    "turn or an unusual departure from their pattern. DESCRIPTIVE ONLY — never diagnose, never claim "
+    "a cause (no illness, stress, injury), never give health advice.")
+
+
+def _break_fallback(r: pd.Series) -> str:
+    kind = "off-season departure" if r["off_season"] else "ordinary seasonal turn"
+    bits = [f"{r['from_state']} -> {r['to_state']} on {r['break_date']} ({kind})"]
+    if r.get("d_mean_temp") is not None:
+        bits.append(f"temp {r['d_mean_temp']:+.1f}C")
+    if r.get("d_mean_hr") is not None:
+        bits.append(f"HR {r['d_mean_hr']:+.1f} bpm")
+    if r.get("d_wear_slots") is not None:
+        bits.append(f"wear {r['d_wear_slots']:+.1f} slots")
+    return "; ".join(bits) + f"; new regime lasted {int(r['days_after'])} days."
+
+
+def explain_breaks_llm(breaks: pd.DataFrame, offline: bool = False) -> tuple[list[str], str]:
+    """LLM phrases one descriptive sentence per break from the measured evidence.
+    Cached; falls back to a deterministic template offline / on any failure."""
+    if breaks is None or not len(breaks):
+        return [], "none"
+    fallback = [_break_fallback(r) for _, r in breaks.iterrows()]
+    if offline:
+        return fallback, "rule"
+    try:
+        import episode_enrichment as ea
+        key = ea._load_gemini_key()
+    except Exception:
+        key = None
+    if not key:
+        return fallback, "rule"
+
+    lines = []
+    for i, r in breaks.iterrows():
+        lines.append(
+            f"- shift {i}: {r['break_date']} | {r['from_state']} -> {r['to_state']} | "
+            f"previous regime {r['days_before']}d, new regime {r['days_after']}d | "
+            f"transition frequency P={r['p_transition']} | off_season={r['off_season']} | "
+            f"delta mean_HR={r['d_mean_hr']} bpm, delta temp={r['d_mean_temp']}C, "
+            f"delta wear={r['d_wear_slots']} slots, delta workout_frac={r['d_workout_frac']}")
+    prompt = "Describe each lifestyle shift below:\n" + "\n".join(lines)
+
+    os.makedirs(_NAME_CACHE, exist_ok=True)
+    cp = os.path.join(_NAME_CACHE, "breaks_" + hashlib.sha256(
+        (_BREAK_SYSTEM + "\n" + prompt).encode()).hexdigest()[:16] + ".json")
+    if os.path.exists(cp):
+        try:
+            cached = json.load(open(cp))
+            if len(cached) == len(breaks):
+                return cached, "llm"
+        except Exception:
+            pass
+    try:
+        from google import genai
+        from google.genai import types
+
+        class _Shift(BaseModel):
+            index: int
+            interpretation: str
+
+        class _Shifts(BaseModel):
+            shifts: list[_Shift]
+
+        client = genai.Client(api_key=key)
+        cfg = types.GenerateContentConfig(
+            temperature=0, response_mime_type="application/json", response_schema=_Shifts,
+            system_instruction=_BREAK_SYSTEM,
+            thinking_config=types.ThinkingConfig(thinking_budget=0))
+        r = client.models.generate_content(model="gemini-3.1-flash-lite", contents=prompt, config=cfg)
+        got = {int(s.index): s.interpretation.strip() for s in r.parsed.shifts}
+        out = [got.get(i, fallback[i]) for i in range(len(breaks))]
+        json.dump(out, open(cp, "w"))
+        return out, "llm"
+    except Exception:
+        return fallback, "rule"
+
+
+# --------------------------------------------------------------------------- #
 # Honest evaluation
 # --------------------------------------------------------------------------- #
 def proxy_alignment(labels: np.ndarray, aux: pd.DataFrame) -> dict:

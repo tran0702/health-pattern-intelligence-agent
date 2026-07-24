@@ -67,6 +67,13 @@ No lifestyle labels exist on an n=1 subject, so the encoder is **self-supervised
   (vs the old rule's thin, duplicate `high_tone_weekday` ×2).
 - **B3 lifestyle map.** State distribution + weekly rhythm (state × weekday) + temporal drift by
   year + subject priors (`global_context.json`, `home_climate.json`).
+- **B4 regime shifts (rendered in File 4).** `segment_regimes` merges consecutive same-state days into
+  sustained regimes (≥5 days; brief flicker absorbed, adjacent same-state regimes merged);
+  `regime_breaks` scores each boundary with **code-measured** deltas (HR tone, temp, wear, workout
+  frequency) plus `p_transition` and `season_share` (how usual that state is in those calendar months —
+  `<OFF_SEASON_SHARE=0.15` = an **off-season departure**); `explain_breaks_llm` has the LLM write one
+  descriptive sentence per shift (cached, rule fallback). **Lifestyle deviation, not anomaly
+  detection** — "when did this person's own routine shift?", never a health verdict.
 - **Output:** `day_embeddings.parquet`, `lifestyle_kg_nodes.csv`, `lifestyle_kg_edges.csv`,
   `lifestyle_map.json`, `l1_proxy_eval.csv`, `l1_meta.json`.
 
